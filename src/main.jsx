@@ -22,6 +22,10 @@ const LAST_VERIFIED = 'May 15, 2026';
 const OEB_RATES_URL = 'https://www.oeb.ca/consumer-information-and-protection/electricity-rates';
 const OEB_ANNOUNCEMENT_URL = 'https://www.oeb.ca/newsroom/2025/ontario-energy-board-announces-changes-electricity-prices-households-small-businesses';
 const ONTARIO_OER_URL = 'https://www.ontario.ca/page/manage-energy-costs-your-home';
+const ONTARIO_PRICE_PLANS_URL = 'https://www.ontario.ca/page/electricity-price-plans';
+const OEB_TYPICAL_CUSTOMER_URL = 'https://www.oeb.ca/sites/default/files/uploads/documents/reports/2023-12/report-defining-ontarios-typical-residential-electricity-customer-20231213.pdf';
+const IESO_POWER_DATA_URL = 'https://ieso.ca/en/Power-Data';
+const IESO_DEMAND_REPORTS_URL = 'https://www.ieso.ca/Power-Data/Demand-Overview/Real-time-Demand-Reports';
 const LUMEN_SHIFT_URL = 'https://lumen-shift.vercel.app';
 const POWER_IN_PRACTICE_URL = 'https://power-in-practice.vercel.app';
 const NOCTIS_URL = 'https://noctis-lake.vercel.app/';
@@ -466,6 +470,33 @@ function LandingPage({ openDashboard, model }) {
         </div>
       </section>
 
+      <section id="sources" className="section learning-section">
+        <p className="eyebrow blue-text">Sources + learning</p>
+        <h2 className="section-title">References behind the model.</h2>
+        <div className="learning-grid">
+          <a href={OEB_RATES_URL} target="_blank" rel="noreferrer">
+            <span>Official rates</span>
+            <h3>Ontario Energy Board electricity rates</h3>
+            <p>Primary source for Time-of-Use, Ultra-Low Overnight, and Tiered electricity prices.</p>
+          </a>
+          <a href={ONTARIO_PRICE_PLANS_URL} target="_blank" rel="noreferrer">
+            <span>Rate plan basics</span>
+            <h3>Ontario electricity price plans</h3>
+            <p>Plain-language explanation of TOU, ULO, and Tiered plans for residential customers.</p>
+          </a>
+          <a href={OEB_TYPICAL_CUSTOMER_URL} target="_blank" rel="noreferrer">
+            <span>Benchmark</span>
+            <h3>Typical residential customer report</h3>
+            <p>Background for household consumption assumptions and Ontario residential comparison context.</p>
+          </a>
+          <a href={IESO_POWER_DATA_URL} target="_blank" rel="noreferrer">
+            <span>Grid data</span>
+            <h3>IESO Power Data</h3>
+            <p>Live and historical Ontario electricity data for demand, supply, and system context.</p>
+          </a>
+        </div>
+      </section>
+
       <section className="section narrow">
         <Card className="timeline-card">
           <p className="eyebrow blue-text">How it works</p>
@@ -711,6 +742,7 @@ function DataAssumptions({ model }) {
         <a href={OEB_RATES_URL} target="_blank" rel="noreferrer">OEB electricity rates</a>
         <a href={OEB_ANNOUNCEMENT_URL} target="_blank" rel="noreferrer">Nov 2025 rate announcement</a>
         <a href={ONTARIO_OER_URL} target="_blank" rel="noreferrer">Ontario OER information</a>
+        <a href={IESO_DEMAND_REPORTS_URL} target="_blank" rel="noreferrer">IESO demand reports</a>
       </div>
     </Card>
   );
