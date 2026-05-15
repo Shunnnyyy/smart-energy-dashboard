@@ -147,11 +147,13 @@ footer div { display: flex; gap: 24px; }
 
 .project-line-grid {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 16px;
 }
 
 .line-card {
+  position: relative;
+  overflow: hidden;
   min-height: 300px;
   display: grid;
   align-content: space-between;
@@ -166,9 +168,25 @@ footer div { display: flex; gap: 24px; }
     box-shadow 180ms ease;
 }
 
+.line-card::before {
+  content: "";
+  position: absolute;
+  inset: 18px;
+  border: 1px solid currentColor;
+  border-radius: 50%;
+  opacity: 0.08;
+  transform: rotate(0deg);
+  transition: transform 700ms ease, opacity 180ms ease;
+}
+
 .line-card:hover {
-  transform: translateY(-6px);
+  transform: translateY(-6px) rotateX(1deg);
   box-shadow: 0 28px 80px rgba(37,99,235,0.12);
+}
+
+.line-card:hover::before {
+  opacity: 0.18;
+  transform: rotate(18deg) scale(1.08);
 }
 
 .line-card span {
@@ -192,11 +210,11 @@ footer div { display: flex; gap: 24px; }
 }
 
 .archive-link {
-  color: #E0F2FE;
+  color: #F8F5EE;
   background:
-    linear-gradient(rgba(127,244,255,0.06) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(127,244,255,0.045) 1px, transparent 1px),
-    #06101B;
+    linear-gradient(rgba(214,173,96,0.09) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(214,173,96,0.07) 1px, transparent 1px),
+    #090806;
   background-size: 32px 32px;
 }
 
@@ -206,7 +224,26 @@ footer div { display: flex; gap: 24px; }
 }
 
 .archive-link h3 {
-  color: #EDF7FF;
+  color: #F8F5EE;
+}
+
+.noctis-link {
+  color: #F8FAFC;
+  background:
+    radial-gradient(circle at 28% 25%, rgba(255,255,255,0.22), transparent 9%),
+    linear-gradient(rgba(255,255,255,0.08) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,0.055) 1px, transparent 1px),
+    #050505;
+  background-size: 100% 100%, 24px 24px, 24px 24px, 100% 100%;
+}
+
+.noctis-link span,
+.noctis-link p {
+  color: #BFC7D1;
+}
+
+.noctis-link h3 {
+  color: #FFFFFF;
 }
 
 .dashboard-link {

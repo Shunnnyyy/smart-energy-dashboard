@@ -23,7 +23,8 @@ const OEB_RATES_URL = 'https://www.oeb.ca/consumer-information-and-protection/el
 const OEB_ANNOUNCEMENT_URL = 'https://www.oeb.ca/newsroom/2025/ontario-energy-board-announces-changes-electricity-prices-households-small-businesses';
 const ONTARIO_OER_URL = 'https://www.ontario.ca/page/manage-energy-costs-your-home';
 const LUMEN_SHIFT_URL = 'https://lumen-shift.vercel.app';
-const POWER_IN_PRACTICE_URL = 'https://power-in-practice-archive.vercel.app';
+const POWER_IN_PRACTICE_URL = 'https://power-in-practice.vercel.app';
+const NOCTIS_URL = 'https://noctis-lake.vercel.app/';
 
 const BILLING_PROFILES = {
   condo: {
@@ -188,7 +189,7 @@ function makeApplianceData(monthlyUsage, billingProfile = 'detached') {
 const features = [
   [Calculator, 'OEB Bill Estimation', 'Estimate monthly hydro cost using Ontario Time-of-Use rates.'],
   [BarChart3, 'Ontario Benchmarking', 'Compare your home against the 746 kWh typical monthly household benchmark.'],
-  [Lightbulb, 'Rule-Based Insights', 'Generate practical recommendations without needing a real AI model.'],
+  [Lightbulb, 'Pattern Notes', 'Turn usage patterns into practical reminders and simple next steps.'],
 ];
 
 const tariffRows = [
@@ -407,7 +408,7 @@ function EnergyNetwork({ model }) {
       <motion.div className="ring ring-one" animate={{ rotate: 360 }} transition={{ duration: 28, repeat: Infinity, ease: 'linear' }} />
       <motion.div className="ring ring-two" animate={{ rotate: -360 }} transition={{ duration: 24, repeat: Infinity, ease: 'linear' }} />
       <div className="live-card">
-        <p className="eyebrow">MVP Data Model</p>
+        <p className="eyebrow">Live usage sketch</p>
         <div className="live-row">
           <div><h3>{formatMoney(model.estimatedBill)}</h3><p>Estimated monthly bill</p></div>
           <Sparkles color="#2563EB" />
@@ -430,15 +431,15 @@ function LandingPage({ openDashboard, model }) {
       <EnergyBackground />
       <nav className="navbar">
         <div className="logo"><span><Zap size={16} /></span>SmartEnergy</div>
-        <div className="nav-links"><a href="#features">Features</a><button onClick={openDashboard}>Dashboard</button><a href="#data">Data Sources</a><a href="#insights">Insights</a><a href="#project-line">Project Line</a></div>
+        <div className="nav-links"><a href="#features">Features</a><button onClick={openDashboard}>Dashboard</button><a href="#data">Data Sources</a><a href="#insights">Insights</a><a href="#project-line">Connected Notes</a></div>
         <Button onClick={openDashboard}>Start Tracking</Button>
       </nav>
 
       <section className="hero">
         <motion.div initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7 }}>
-          <div className="badge">Ontario home energy intelligence</div>
-          <h1>Track Your Home Energy Smarter</h1>
-          <p>Estimate electricity costs with Ontario TOU rates, compare against typical residential usage, and discover smarter energy habits.</p>
+          <div className="badge">Ontario home energy notes</div>
+          <h1>A Small Dashboard for Everyday Power</h1>
+          <p>Estimate electricity costs with Ontario TOU rates, compare rough household usage, and see how timing changes the shape of a monthly bill.</p>
           <div className="button-row"><Button onClick={openDashboard}>Start Dashboard</Button><Button secondary onClick={() => document.getElementById('insights')?.scrollIntoView({ behavior: 'smooth' })}>View Insights</Button></div>
         </motion.div>
         <EnergyNetwork model={model} />
@@ -449,8 +450,8 @@ function LandingPage({ openDashboard, model }) {
       </section>
 
       <section id="data" className="section data-section">
-        <p className="eyebrow blue-text">Core MVP Data Sources</p>
-        <h2 className="section-title">Only two data sources. Still a complete SaaS concept.</h2>
+        <p className="eyebrow blue-text">Core Data Sources</p>
+        <h2 className="section-title">A simple model built from public rates and household assumptions.</h2>
         <div className="data-grid">
           <Card className="source-card"><Database color="#2563EB" /><h3>Ontario Energy Board</h3><p>Used for Time-of-Use electricity pricing and bill calculation.</p><div className="rate-row"><span>Off</span><b>9.8¢</b><span>Mid</span><b>15.7¢</b><span>On</span><b>20.3¢</b></div></Card>
           <Card className="source-card"><ShieldCheck color="#22C55E" /><h3>Ontario Average Household Usage</h3><p>Used as the benchmark for comparison, analytics, and scoring.</p><div className="benchmark">746 kWh/month</div></Card>
@@ -458,8 +459,8 @@ function LandingPage({ openDashboard, model }) {
       </section>
 
       <section id="features" className="section">
-        <p className="eyebrow blue-text">Features</p>
-        <h2 className="section-title">Calculator becomes analytics</h2>
+        <p className="eyebrow blue-text">Interactions</p>
+        <h2 className="section-title">A calculator becomes a way to notice habits.</h2>
         <div className="feature-grid">
           {features.map(([Icon, title, text]) => <Card key={title} className="feature-card"><Icon color="#2563EB" /><h3>{title}</h3><p>{text}</p></Card>)}
         </div>
@@ -481,29 +482,34 @@ function LandingPage({ openDashboard, model }) {
       </section>
 
       <section id="project-line" className="section project-line">
-        <p className="eyebrow blue-text">Connected portfolio system</p>
-        <h2 className="section-title">From energy behavior to adaptive city infrastructure</h2>
+        <p className="eyebrow blue-text">Connected notes</p>
+        <h2 className="section-title">One curiosity, different scales.</h2>
         <div className="project-line-grid">
           <a className="line-card archive-link" href={POWER_IN_PRACTICE_URL}>
-            <span>Research archive</span>
+            <span>Research notes</span>
             <h3>Power in Practice</h3>
-            <p>Frames the question: where does wasted energy show up in daily life and urban space?</p>
+            <p>Looks at where electricity becomes visible in daily life, public data, and nighttime space.</p>
+          </a>
+          <a className="line-card noctis-link" href={NOCTIS_URL}>
+            <span>Photo map</span>
+            <h3>NOCTIS</h3>
+            <p>Collects Toronto night photographs as map anchors, light conditions, and visual field notes.</p>
           </a>
           <a className="line-card dashboard-link" href="#top" onClick={(event) => { event.preventDefault(); openDashboard(); }}>
             <span>Data dashboard</span>
             <h3>SmartEnergy</h3>
-            <p>Turns home electricity use, Ontario TOU rates, and behavior into measurable decisions.</p>
+            <p>Lets household electricity assumptions become sliders, charts, and reportable scenarios.</p>
           </a>
           <a className="line-card lumen-link" href={LUMEN_SHIFT_URL}>
-            <span>Urban solution</span>
+            <span>Light prototype</span>
             <h3>Lumen Shift</h3>
-            <p>Applies the same energy logic to public lighting, photography, and sensor-based control.</p>
+            <p>Imagines city lights as responsive objects shaped by motion, quiet hours, and field observation.</p>
           </a>
         </div>
       </section>
 
       <section className="cta">
-        <h2>Start Optimizing Your Energy Usage</h2>
+        <h2>Open the usage model</h2>
         <Button onClick={openDashboard}>Open Dashboard</Button>
       </section>
 
@@ -647,7 +653,7 @@ function InsightsScreen({ monthlyUsage, onPeakPercent, model }) {
   const insights = buildInsights(monthlyUsage, onPeakPercent, model);
   return (
     <div className="insights-layout">
-      <Card className="insight-hero"><p className="label">Rule-Based AI Insights</p><h2>{formatMoney(model.potentialSavings)}</h2><p>Estimated monthly savings if 15% of on-peak usage shifts to off-peak hours.</p></Card>
+      <Card className="insight-hero"><p className="label">Pattern Notes</p><h2>{formatMoney(model.potentialSavings)}</h2><p>Estimated monthly savings if 15% of on-peak usage shifts to off-peak hours.</p></Card>
       <div className="rec-list">{insights.map(([title, text]) => <Card key={title} className="rec-card"><Sparkles color="#22C55E" /><div><h3>{title}</h3><p>{text}</p></div></Card>)}</div>
     </div>
   );
