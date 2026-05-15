@@ -2,12 +2,11 @@ import React, { useMemo, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { motion } from 'framer-motion';
 import {
-  Zap, BarChart3, Leaf, Home, LineChart, Settings, Lightbulb,
-  Gauge, Activity, Sparkles, Database, ShieldCheck, Calculator, FileText
+  Zap, BarChart3, Home, LineChart, Settings, Lightbulb,
+  Sparkles, Database, ShieldCheck, Calculator, FileText, Info, ArrowLeft
 } from 'lucide-react';
 import {
-  LineChart as ReLineChart, Line, XAxis, YAxis, CartesianGrid,
-  Tooltip, ResponsiveContainer, Area, AreaChart
+  XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Area, AreaChart
 } from 'recharts';
 import './style.css';
 
@@ -31,9 +30,11 @@ function getEfficiencyScore(usage) {
 }
 
 function calculateEnergyModel(monthlyUsage, onPeakPercent, midPeakPercent) {
-  const offPeakPercent = Math.max(0, 100 - onPeakPercent - midPeakPercent);
-  const onPeakKwh = monthlyUsage * (onPeakPercent / 100);
-  const midPeakKwh = monthlyUsage * (midPeakPercent / 100);
+  const normalizedOnPeak = Math.min(100, Math.max(0, onPeakPercent));
+  const normalizedMidPeak = Math.min(100 - normalizedOnPeak, Math.max(0, midPeakPercent));
+  const offPeakPercent = 100 - normalizedOnPeak - normalizedMidPeak;
+  const onPeakKwh = monthlyUsage * (normalizedOnPeak / 100);
+  const midPeakKwh = monthlyUsage * (normalizedMidPeak / 100);
   const offPeakKwh = monthlyUsage * (offPeakPercent / 100);
 
   const estimatedBill =
@@ -47,6 +48,8 @@ function calculateEnergyModel(monthlyUsage, onPeakPercent, midPeakPercent) {
 
   return {
     offPeakPercent,
+    onPeakPercent: normalizedOnPeak,
+    midPeakPercent: normalizedMidPeak,
     onPeakKwh,
     midPeakKwh,
     offPeakKwh,
@@ -97,9 +100,23 @@ const features = [
   [Lightbulb, 'Rule-Based Insights', 'Generate practical recommendations without needing a real AI model.'],
 ];
 
+const tariffRows = [
+  ['On-Peak', '20.3¢', 'Weekday demand hours', '#EF4444'],
+  ['Mid-Peak', '15.7¢', 'Shoulder periods', '#F59E0B'],
+  ['Off-Peak', '9.8¢', 'Evenings, weekends, holidays', '#16A34A'],
+];
+
+function CostScopeNote() {
+  return (
+    <div className="scope-note" role="note">
+      <Info size={16} />
+      <span>Energy charge estimate only. Delivery, regulatory charges, HST, credits, and fixed fees are not included.</span>
+    </div>
+  );
+}
 
 function buildReportHTML({ monthlyUsage, onPeakPercent, midPeakPercent, model, insights }) {
-  const offPeakPercent = Math.max(0, 100 - onPeakPercent - midPeakPercent);
+  const offPeakPercent = model.offPeakPercent;
   const comparisonText = model.comparisonPercent >= 0 ? 'above' : 'below';
   const generatedAt = new Date().toLocaleString('en-CA', { dateStyle: 'medium', timeStyle: 'short' });
   const onCost = model.onPeakKwh * OEB_TOU_RATES.onPeak;
@@ -115,19 +132,19 @@ function buildReportHTML({ monthlyUsage, onPeakPercent, midPeakPercent, model, i
     * { box-sizing: border-box; }
     body { margin: 0; font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; color: #0F172A; background: #F8FAFC; }
     .report { max-width: 960px; margin: 0 auto; padding: 48px; }
-    .hero { background: linear-gradient(135deg, rgba(37,99,235,.10), rgba(34,197,94,.08)); border: 1px solid rgba(15,23,42,.08); border-radius: 32px; padding: 34px; }
+    .hero { background: #FFFFFF; border: 1px solid rgba(15,23,42,.10); border-radius: 8px; padding: 34px; }
     .brand { display:flex; justify-content:space-between; align-items:center; gap:16px; margin-bottom:38px; }
-    .logo { font-weight: 800; letter-spacing: -.04em; font-size: 22px; }
+    .logo { font-weight: 800; letter-spacing: 0; font-size: 22px; }
     .date { color:#64748B; font-size: 13px; }
     .eyebrow { color:#2563EB; font-size:12px; text-transform:uppercase; letter-spacing:.28em; font-weight:800; }
-    h1 { font-size: 48px; line-height: .95; letter-spacing: -.06em; margin: 12px 0 14px; }
-    h2 { font-size: 26px; letter-spacing: -.04em; margin: 0 0 16px; }
+    h1 { font-size: 48px; line-height: 1; letter-spacing: 0; margin: 12px 0 14px; }
+    h2 { font-size: 26px; letter-spacing: 0; margin: 0 0 16px; }
     h3 { margin: 0 0 6px; font-size: 16px; }
     p { color:#475569; line-height:1.6; }
     .grid { display:grid; grid-template-columns: repeat(4, 1fr); gap:16px; margin:22px 0; }
-    .card { background: rgba(255,255,255,.82); border:1px solid rgba(15,23,42,.08); border-radius:24px; padding:22px; box-shadow: 0 18px 60px rgba(15,23,42,.06); }
+    .card { background: rgba(255,255,255,.82); border:1px solid rgba(15,23,42,.08); border-radius:8px; padding:22px; box-shadow: 0 18px 60px rgba(15,23,42,.06); }
     .label { color:#64748B; font-size:11px; text-transform:uppercase; letter-spacing:.22em; font-weight:800; margin:0 0 12px; }
-    .num { font-size:34px; font-weight:850; letter-spacing:-.05em; color:#0F172A; }
+    .num { font-size:34px; font-weight:850; letter-spacing:0; color:#0F172A; }
     .section { margin-top: 26px; }
     table { width:100%; border-collapse: collapse; overflow:hidden; border-radius:20px; background:white; border:1px solid rgba(15,23,42,.08); }
     th, td { padding:16px; text-align:left; border-bottom:1px solid rgba(15,23,42,.06); }
@@ -137,6 +154,7 @@ function buildReportHTML({ monthlyUsage, onPeakPercent, midPeakPercent, model, i
     .dot { width:10px; height:10px; border-radius:999px; background:#22C55E; margin-top:7px; flex:none; }
     .bar { height:12px; border-radius:999px; background:#E2E8F0; overflow:hidden; margin-top:12px; }
     .bar span { display:block; height:100%; width:${Math.min(100, monthlyUsage / 12)}%; background:linear-gradient(90deg,#2563EB,#22C55E); border-radius:999px; }
+    .scope { display:flex; gap:8px; align-items:flex-start; padding:14px 16px; background:#FFFBEB; border:1px solid #FDE68A; border-radius:8px; color:#92400E; font-size:13px; line-height:1.5; }
     .actions { margin: 26px 0; display:flex; gap:12px; }
     button { border:0; border-radius:999px; padding:12px 18px; background:#2563EB; color:white; font-weight:800; cursor:pointer; }
     button.secondary { background:white; color:#0F172A; border:1px solid rgba(15,23,42,.1); }
@@ -150,6 +168,7 @@ function buildReportHTML({ monthlyUsage, onPeakPercent, midPeakPercent, model, i
       <div class="eyebrow">Ontario Energy Report</div>
       <h1>Household Energy Summary</h1>
       <p>This report estimates monthly electricity cost using Ontario Time-of-Use rates and compares usage against the Ontario typical residential benchmark of 746 kWh/month.</p>
+      <div class="scope">Energy charge estimate only. Delivery, regulatory charges, HST, credits, and fixed fees are not included.</div>
       <div class="actions"><button onclick="window.print()">Print / Save PDF</button></div>
     </section>
 
@@ -165,8 +184,8 @@ function buildReportHTML({ monthlyUsage, onPeakPercent, midPeakPercent, model, i
       <table>
         <thead><tr><th>Period</th><th>Share</th><th>Usage</th><th>Rate</th><th>Cost</th></tr></thead>
         <tbody>
-          <tr><td>On-Peak</td><td>${onPeakPercent}%</td><td>${model.onPeakKwh.toFixed(0)} kWh</td><td>20.3¢ / kWh</td><td>${formatMoney(onCost)}</td></tr>
-          <tr><td>Mid-Peak</td><td>${midPeakPercent}%</td><td>${model.midPeakKwh.toFixed(0)} kWh</td><td>15.7¢ / kWh</td><td>${formatMoney(midCost)}</td></tr>
+          <tr><td>On-Peak</td><td>${model.onPeakPercent}%</td><td>${model.onPeakKwh.toFixed(0)} kWh</td><td>20.3¢ / kWh</td><td>${formatMoney(onCost)}</td></tr>
+          <tr><td>Mid-Peak</td><td>${model.midPeakPercent}%</td><td>${model.midPeakKwh.toFixed(0)} kWh</td><td>15.7¢ / kWh</td><td>${formatMoney(midCost)}</td></tr>
           <tr><td>Off-Peak</td><td>${offPeakPercent}%</td><td>${model.offPeakKwh.toFixed(0)} kWh</td><td>9.8¢ / kWh</td><td>${formatMoney(offCost)}</td></tr>
         </tbody>
       </table>
@@ -229,8 +248,8 @@ function EnergyBackground() {
   );
 }
 
-function Button({ children, secondary, onClick }) {
-  return <motion.button onClick={onClick} whileHover={{ y: -2 }} whileTap={{ scale: 0.98 }} className={secondary ? 'btn secondary' : 'btn'}>{children}</motion.button>;
+function Button({ children, secondary, onClick, ariaLabel }) {
+  return <motion.button aria-label={ariaLabel} onClick={onClick} whileHover={{ y: -2 }} whileTap={{ scale: 0.98 }} className={secondary ? 'btn secondary' : 'btn'}>{children}</motion.button>;
 }
 
 function Card({ children, className = '' }) {
@@ -290,7 +309,7 @@ function LandingPage({ openDashboard, model }) {
           <div className="badge">Ontario home energy intelligence</div>
           <h1>Track Your Home Energy Smarter</h1>
           <p>Estimate electricity costs with Ontario TOU rates, compare against typical residential usage, and discover smarter energy habits.</p>
-          <div className="button-row"><Button onClick={openDashboard}>Start Dashboard</Button><Button secondary>View Insights</Button></div>
+          <div className="button-row"><Button onClick={openDashboard}>Start Dashboard</Button><Button secondary onClick={() => document.getElementById('insights')?.scrollIntoView({ behavior: 'smooth' })}>View Insights</Button></div>
         </motion.div>
         <EnergyNetwork model={model} />
       </section>
@@ -345,7 +364,7 @@ function InputSlider({ label, value, min, max, step = 1, suffix, onChange }) {
   return (
     <label className="input-card">
       <div><p className="label">{label}</p><strong>{value}{suffix}</strong></div>
-      <input type="range" min={min} max={max} step={step} value={value} onChange={(e) => onChange(Number(e.target.value))} />
+      <input aria-label={label} type="range" min={min} max={max} step={step} value={value} onChange={(e) => onChange(Number(e.target.value))} />
     </label>
   );
 }
@@ -390,6 +409,7 @@ function OverviewScreen({ monthlyUsage, onPeakPercent, midPeakPercent, model }) 
           </div>
           <div className="bill-bar"><span style={{ width: `${Math.min(100, monthlyUsage / 12)}%` }} /></div>
           <p className="bill-note">Your usage is {Math.abs(model.comparisonPercent).toFixed(1)}% {comparisonText}.</p>
+          <CostScopeNote />
         </Card>
       </div>
 
@@ -428,7 +448,7 @@ function UsageScreen({ monthlyUsage, onPeakPercent, midPeakPercent, model }) {
         </ResponsiveContainer>
       </Card>
       <div className="stack">
-        <Card className="tou-card"><p className="label">TOU Breakdown</p><h3>{monthlyUsage} kWh monthly</h3>{touData.map(row => <div className="tou-row" key={row.name}><div><b>{row.name}</b><p className="muted">{row.kwh} kWh · {row.rate}</p></div><span className="tou-pill">{row.cost}</span></div>)}</Card>
+        <Card className="tou-card"><p className="label">TOU Breakdown</p><h3>{monthlyUsage} kWh monthly</h3>{touData.map(row => <div className="tou-row" key={row.name}><div><b>{row.name}</b><p className="muted">{row.kwh} kWh · {row.rate}</p></div><span className="tou-pill">{row.cost}</span></div>)}<CostScopeNote /></Card>
         <Card className="source-detail"><p className="label">Data Source</p><h2>OEB</h2><p>Bill estimation is calculated with Ontario Energy Board Time-of-Use pricing.</p></Card>
       </div>
     </div>
@@ -455,11 +475,11 @@ function ComparisonScreen({ monthlyUsage, model }) {
   );
 }
 
-function SettingsScreen({ monthlyUsage, onPeakPercent, midPeakPercent }) {
+function SettingsScreen({ monthlyUsage, onPeakPercent, midPeakPercent, model }) {
   return (
     <div className="settings-layout">
-      <Card className="settings-card"><p className="label">Settings</p><h3>Dashboard preferences</h3><p>These settings are mock UI controls for your portfolio prototype.</p><div className="settings-row"><span>Use OEB TOU pricing</span><span className="toggle" /></div><div className="settings-row"><span>Show Ontario comparison</span><span className="toggle" /></div><div className="settings-row"><span>Enable rule-based insights</span><span className="toggle" /></div></Card>
-      <div className="export-box"><p className="label">Current Scenario</p><h3>{monthlyUsage} kWh</h3><p className="muted">On-Peak {onPeakPercent}% · Mid-Peak {midPeakPercent}% · Off-Peak {100 - onPeakPercent - midPeakPercent}%</p><p className="empty-note">Use the sliders above to change the dashboard model in real time.</p></div>
+      <Card className="settings-card"><p className="label">Settings</p><h3>Dashboard preferences</h3><p>Scenario assumptions used throughout the calculator.</p><div className="settings-row"><span>Use OEB TOU pricing</span><span className="toggle" /></div><div className="settings-row"><span>Show Ontario comparison</span><span className="toggle" /></div><div className="settings-row"><span>Enable rule-based insights</span><span className="toggle" /></div></Card>
+      <div className="export-box"><p className="label">Current Scenario</p><h3>{monthlyUsage} kWh</h3><p className="muted">On-Peak {model.onPeakPercent}% · Mid-Peak {model.midPeakPercent}% · Off-Peak {model.offPeakPercent}%</p><p className="empty-note">Use the sliders above to change the dashboard model in real time.</p><CostScopeNote /></div>
     </div>
   );
 }
@@ -481,31 +501,40 @@ function Dashboard({ backHome, monthlyUsage, setMonthlyUsage, onPeakPercent, set
       <EnergyBackground />
       <aside className="sidebar">
         <button className="logo sidebar-logo" onClick={backHome}><span><Zap size={16} /></span>SmartEnergy</button>
-        {menu.map(([Icon, label]) => <button key={label} onClick={() => setActive(label)} className={active === label ? 'side-item active' : 'side-item'}><Icon size={18} />{label}</button>)}
+        {menu.map(([Icon, label]) => <button key={label} onClick={() => setActive(label)} className={active === label ? 'side-item active' : 'side-item'} aria-current={active === label ? 'page' : undefined}><Icon size={18} />{label}</button>)}
         <div className="sidebar-note"><p>Data Sources</p><span>OEB TOU Rates</span><span>Ontario 746 kWh Benchmark</span></div>
       </aside>
 
       <main className="dash-main">
+        <div className="mobile-topbar"><Button secondary onClick={backHome} ariaLabel="Back to home"><ArrowLeft size={16} /> Home</Button><Button onClick={() => exportEnergyReport({ monthlyUsage, onPeakPercent, midPeakPercent, model, insights: reportInsights })} ariaLabel="Export report"><FileText size={16} /> Export</Button></div>
+        <div className="mobile-tabs" aria-label="Dashboard sections">{menu.map(([Icon, label]) => <button key={label} onClick={() => setActive(label)} className={active === label ? 'active' : ''} aria-current={active === label ? 'page' : undefined}><Icon size={16} /><span>{label}</span></button>)}</div>
         <div className="page-title-row"><div><p className="eyebrow blue-text">{active}</p><h1>{active === 'Overview' ? 'Energy Overview' : active}</h1><p className="muted">{descriptions[active]}</p></div><Button onClick={() => exportEnergyReport({ monthlyUsage, onPeakPercent, midPeakPercent, model, insights: reportInsights })}><FileText size={16} /> Export Report</Button></div>
+
+        <div className="tariff-strip" aria-label="Ontario time-of-use rates">
+          {tariffRows.map(([period, rate, detail, color]) => <span key={period}><i style={{ background: color }} /> <b>{period}</b> {rate} <em>{detail}</em></span>)}
+        </div>
 
         <div className="input-grid">
           <InputSlider label="Monthly Usage" value={monthlyUsage} min={300} max={1400} suffix=" kWh" onChange={setMonthlyUsage} />
-          <InputSlider label="On-Peak Usage" value={onPeakPercent} min={5} max={70} suffix="%" onChange={setOnPeakPercent} />
-          <InputSlider label="Mid-Peak Usage" value={midPeakPercent} min={0} max={50} suffix="%" onChange={setMidPeakPercent} />
+          <InputSlider label="On-Peak Usage" value={model.onPeakPercent} min={5} max={70} suffix="%" onChange={(value) => {
+            setOnPeakPercent(value);
+            setMidPeakPercent(Math.min(midPeakPercent, 100 - value));
+          }} />
+          <InputSlider label="Mid-Peak Usage" value={model.midPeakPercent} min={0} max={Math.max(0, 100 - model.onPeakPercent)} suffix="%" onChange={setMidPeakPercent} />
         </div>
 
         {active === 'Overview' && <OverviewScreen monthlyUsage={monthlyUsage} onPeakPercent={onPeakPercent} midPeakPercent={midPeakPercent} model={model} />}
         {active === 'Usage' && <UsageScreen monthlyUsage={monthlyUsage} onPeakPercent={onPeakPercent} midPeakPercent={midPeakPercent} model={model} />}
         {active === 'Insights' && <InsightsScreen monthlyUsage={monthlyUsage} onPeakPercent={onPeakPercent} model={model} />}
         {active === 'Comparison' && <ComparisonScreen monthlyUsage={monthlyUsage} model={model} />}
-        {active === 'Settings' && <SettingsScreen monthlyUsage={monthlyUsage} onPeakPercent={onPeakPercent} midPeakPercent={midPeakPercent} />}
+        {active === 'Settings' && <SettingsScreen monthlyUsage={monthlyUsage} onPeakPercent={onPeakPercent} midPeakPercent={midPeakPercent} model={model} />}
       </main>
     </div>
   );
 }
 
 function App() {
-  const [view, setView] = useState('landing');
+  const [view, setView] = useState('dashboard');
   const [monthlyUsage, setMonthlyUsage] = useState(820);
   const [onPeakPercent, setOnPeakPercent] = useState(35);
   const [midPeakPercent, setMidPeakPercent] = useState(0);
