@@ -23,7 +23,7 @@ const OEB_RATES_URL = 'https://www.oeb.ca/consumer-information-and-protection/el
 const OEB_ANNOUNCEMENT_URL = 'https://www.oeb.ca/newsroom/2025/ontario-energy-board-announces-changes-electricity-prices-households-small-businesses';
 const ONTARIO_OER_URL = 'https://www.ontario.ca/page/manage-energy-costs-your-home';
 const LUMEN_SHIFT_URL = 'https://lumen-shift.vercel.app';
-const POWER_IN_PRACTICE_URL = 'https://power-in-practice.vercel.app';
+const POWER_IN_PRACTICE_URL = 'https://power-in-practice-archive.vercel.app';
 
 const BILLING_PROFILES = {
   condo: {
