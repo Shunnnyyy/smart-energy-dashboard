@@ -128,6 +128,18 @@ footer div { display: flex; gap: 24px; }
 .assumption-grid span { color: #64748B; font-size: 13px; line-height: 1.55; }
 .field-row { display: grid; gap: 8px; margin-top: 18px; color: #0F172A; font-weight: 700; }
 .field-row select { width: 100%; border: 1px solid rgba(15,23,42,0.12); border-radius: 8px; padding: 12px 14px; background: white; color: #0F172A; font: inherit; }
+.chart-fallback { display: grid; place-items: center; height: 290px; border-radius: 8px; background: rgba(248,250,252,0.78); color: #64748B; font-weight: 700; }
+.scenario-strip { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 10px; margin-bottom: 18px; }
+.scenario-strip button { display: grid; gap: 4px; justify-items: start; min-width: 0; padding: 13px 14px; border: 1px solid rgba(15,23,42,0.08); border-radius: 8px; background: rgba(255,255,255,0.78); color: #475569; text-align: left; }
+.scenario-strip button.active { border-color: rgba(37,99,235,0.35); background: rgba(37,99,235,0.08); color: #2563EB; }
+.scenario-strip span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 13px; font-weight: 800; }
+.scenario-strip b { color: #0F172A; font-size: 12px; }
+.assumption-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 18px; }
+.assumption-head h3 { margin: 8px 0 0; font-size: 22px; }
+.rate-table { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-top: 18px; }
+.rate-table span { display: flex; justify-content: space-between; gap: 12px; padding: 12px 14px; border-radius: 8px; background: rgba(37,99,235,0.06); color: #2563EB; font-weight: 800; }
+.source-links { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 18px; }
+.source-links a { padding: 10px 12px; border-radius: 8px; border: 1px solid rgba(37,99,235,0.16); background: rgba(255,255,255,0.72); color: #2563EB; font-weight: 800; font-size: 13px; }
 
 @media (max-width: 1100px) {
   .metric-grid { grid-template-columns: repeat(2, 1fr); }
@@ -315,6 +327,15 @@ footer div { display: flex; gap: 24px; }
 
   .assumption-grid {
     grid-template-columns: 1fr;
+  }
+
+  .scenario-strip,
+  .rate-table {
+    grid-template-columns: 1fr;
+  }
+
+  .assumption-head {
+    display: block;
   }
 
   .bill-card h2,
