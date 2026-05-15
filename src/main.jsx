@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { motion } from 'framer-motion';
 import {
@@ -6,7 +6,8 @@ import {
   Sparkles, Database, ShieldCheck, Calculator, FileText, Info, ArrowLeft
 } from 'lucide-react';
 import {
-  XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Area, AreaChart
+  XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
+  BarChart as ReBarChart, Bar, Cell, PieChart, Pie
 } from 'recharts';
 import './style.css';
 
@@ -17,6 +18,34 @@ const OEB_TOU_RATES = {
 };
 
 const ONTARIO_AVERAGE_KWH = 746;
+const STORAGE_KEY = 'smartenergy-dashboard-state-v2';
+
+const BILLING_PROFILES = {
+  condo: {
+    label: 'Condo / apartment',
+    fixedCharge: 24,
+    deliveryRate: 0.057,
+    regulatoryRate: 0.006,
+    applianceMix: { HVAC: 0.32, EV: 0.04, Laundry: 0.12, Lighting: 0.14, Kitchen: 0.18, Other: 0.20 },
+  },
+  detached: {
+    label: 'Detached home',
+    fixedCharge: 34,
+    deliveryRate: 0.071,
+    regulatoryRate: 0.006,
+    applianceMix: { HVAC: 0.40, EV: 0.08, Laundry: 0.10, Lighting: 0.10, Kitchen: 0.16, Other: 0.16 },
+  },
+  ev: {
+    label: 'EV household',
+    fixedCharge: 36,
+    deliveryRate: 0.074,
+    regulatoryRate: 0.006,
+    applianceMix: { HVAC: 0.28, EV: 0.30, Laundry: 0.08, Lighting: 0.08, Kitchen: 0.12, Other: 0.14 },
+  },
+};
+
+const HST_RATE = 0.13;
+const ONTARIO_ELECTRICITY_REBATE = 0.235;
 
 function formatMoney(value) {
   return new Intl.NumberFormat('en-CA', { style: 'currency', currency: 'CAD', maximumFractionDigits: 0 }).format(value);
@@ -29,18 +58,36 @@ function getEfficiencyScore(usage) {
   return 'D';
 }
 
-function calculateEnergyModel(monthlyUsage, onPeakPercent, midPeakPercent) {
+function getTouPeriod(hour, dayType) {
+  if (dayType === 'weekend') return 'offPeak';
+  if (hour < 7 || hour >= 19) return 'offPeak';
+  if (hour >= 11 && hour < 17) return 'onPeak';
+  return 'midPeak';
+}
+
+function formatRate(rate) {
+  return `${(rate * 100).toFixed(1)}¢`;
+}
+
+function calculateEnergyModel(monthlyUsage, onPeakPercent, midPeakPercent, billingProfile = 'detached') {
   const normalizedOnPeak = Math.min(100, Math.max(0, onPeakPercent));
   const normalizedMidPeak = Math.min(100 - normalizedOnPeak, Math.max(0, midPeakPercent));
   const offPeakPercent = 100 - normalizedOnPeak - normalizedMidPeak;
   const onPeakKwh = monthlyUsage * (normalizedOnPeak / 100);
   const midPeakKwh = monthlyUsage * (normalizedMidPeak / 100);
   const offPeakKwh = monthlyUsage * (offPeakPercent / 100);
+  const profile = BILLING_PROFILES[billingProfile] || BILLING_PROFILES.detached;
 
-  const estimatedBill =
+  const electricityCharge =
     onPeakKwh * OEB_TOU_RATES.onPeak +
     midPeakKwh * OEB_TOU_RATES.midPeak +
     offPeakKwh * OEB_TOU_RATES.offPeak;
+  const deliveryCharge = monthlyUsage * profile.deliveryRate + profile.fixedCharge;
+  const regulatoryCharge = monthlyUsage * profile.regulatoryRate;
+  const subtotalBeforeTax = electricityCharge + deliveryCharge + regulatoryCharge;
+  const hst = subtotalBeforeTax * HST_RATE;
+  const oerCredit = subtotalBeforeTax * ONTARIO_ELECTRICITY_REBATE;
+  const estimatedBill = subtotalBeforeTax + hst - oerCredit;
 
   const shiftedKwh = onPeakKwh * 0.15;
   const potentialSavings = shiftedKwh * (OEB_TOU_RATES.onPeak - OEB_TOU_RATES.offPeak);
@@ -53,10 +100,19 @@ function calculateEnergyModel(monthlyUsage, onPeakPercent, midPeakPercent) {
     onPeakKwh,
     midPeakKwh,
     offPeakKwh,
+    electricityCharge,
+    deliveryCharge,
+    regulatoryCharge,
+    fixedCharge: profile.fixedCharge,
+    hst,
+    oerCredit,
+    subtotalBeforeTax,
     estimatedBill,
     potentialSavings,
     comparisonPercent,
     efficiencyScore: getEfficiencyScore(monthlyUsage),
+    billingProfile,
+    profile,
   };
 }
 
@@ -84,14 +140,36 @@ function buildInsights(monthlyUsage, onPeakPercent, model) {
   return insights;
 }
 
-function makeUsageData(monthlyUsage, onPeakPercent, midPeakPercent) {
-  const daily = monthlyUsage / 30;
-  return [
-    { time: 'Morning', usage: +(daily * 0.22).toFixed(1), type: 'Mid-Peak' },
-    { time: 'Afternoon', usage: +(daily * (onPeakPercent / 100)).toFixed(1), type: 'On-Peak' },
-    { time: 'Evening', usage: +(daily * (midPeakPercent / 100 + 0.1)).toFixed(1), type: 'Mid-Peak' },
-    { time: 'Night', usage: +(daily * 0.28).toFixed(1), type: 'Off-Peak' },
-  ];
+function makeHourlyUsageData(monthlyUsage, dayType, billingProfile = 'detached') {
+  const dailyTarget = monthlyUsage / 30;
+  const profile = BILLING_PROFILES[billingProfile] || BILLING_PROFILES.detached;
+  const evBoost = profile.applianceMix.EV > 0.2 ? 1.55 : 1;
+  const raw = Array.from({ length: 24 }, (_, hour) => {
+    const morning = hour >= 6 && hour <= 9 ? 1.4 : 0;
+    const workday = dayType === 'weekday' && hour >= 10 && hour <= 16 ? 0.72 : 0;
+    const evening = hour >= 17 && hour <= 22 ? 1.75 : 0;
+    const overnight = hour < 6 ? 0.72 * evBoost : 0.25;
+    const weekendBump = dayType === 'weekend' && hour >= 9 && hour <= 21 ? 0.42 : 0;
+    const base = 0.48 + morning + workday + evening + overnight + weekendBump;
+    return { hour, period: getTouPeriod(hour, dayType), raw: base };
+  });
+  const rawTotal = raw.reduce((sum, item) => sum + item.raw, 0);
+  return raw.map(item => ({
+    time: `${String(item.hour).padStart(2, '0')}:00`,
+    hour: item.hour,
+    period: item.period,
+    periodLabel: item.period === 'onPeak' ? 'On-Peak' : item.period === 'midPeak' ? 'Mid-Peak' : 'Off-Peak',
+    usage: +(item.raw / rawTotal * dailyTarget).toFixed(2),
+  }));
+}
+
+function makeApplianceData(monthlyUsage, billingProfile = 'detached') {
+  const profile = BILLING_PROFILES[billingProfile] || BILLING_PROFILES.detached;
+  return Object.entries(profile.applianceMix).map(([name, share]) => ({
+    name,
+    value: Math.round(monthlyUsage * share),
+    share,
+  }));
 }
 
 const features = [
@@ -110,12 +188,12 @@ function CostScopeNote() {
   return (
     <div className="scope-note" role="note">
       <Info size={16} />
-      <span>Energy charge estimate only. Delivery, regulatory charges, HST, credits, and fixed fees are not included.</span>
+      <span>Bill estimate includes configurable delivery, regulatory charges, HST, and Ontario Electricity Rebate. Utility-specific charges may differ.</span>
     </div>
   );
 }
 
-function buildReportHTML({ monthlyUsage, onPeakPercent, midPeakPercent, model, insights }) {
+function buildReportHTML({ monthlyUsage, onPeakPercent, midPeakPercent, model, insights, showBenchmark }) {
   const offPeakPercent = model.offPeakPercent;
   const comparisonText = model.comparisonPercent >= 0 ? 'above' : 'below';
   const generatedAt = new Date().toLocaleString('en-CA', { dateStyle: 'medium', timeStyle: 'short' });
@@ -167,20 +245,20 @@ function buildReportHTML({ monthlyUsage, onPeakPercent, midPeakPercent, model, i
       <div class="brand"><div class="logo">⚡ SmartEnergy</div><div class="date">Generated ${generatedAt}</div></div>
       <div class="eyebrow">Ontario Energy Report</div>
       <h1>Household Energy Summary</h1>
-      <p>This report estimates monthly electricity cost using Ontario Time-of-Use rates and compares usage against the Ontario typical residential benchmark of 746 kWh/month.</p>
-      <div class="scope">Energy charge estimate only. Delivery, regulatory charges, HST, credits, and fixed fees are not included.</div>
+      <p>This report estimates monthly electricity cost using Ontario Time-of-Use rates plus configurable delivery, regulatory, HST, and Ontario Electricity Rebate assumptions.</p>
+      <div class="scope">Estimate only. Delivery and fixed charges vary by local utility; this scenario uses the ${model.profile.label} billing profile.</div>
       <div class="actions"><button onclick="window.print()">Print / Save PDF</button></div>
     </section>
 
     <section class="grid">
       <div class="card"><p class="label">Monthly Usage</p><div class="num">${monthlyUsage}</div><p>kWh</p></div>
-      <div class="card"><p class="label">Estimated Bill</p><div class="num">${formatMoney(model.estimatedBill)}</div><p>OEB TOU estimate</p></div>
-      <div class="card"><p class="label">Ontario Average</p><div class="num">746</div><p>kWh/month</p></div>
+      <div class="card"><p class="label">Estimated Bill</p><div class="num">${formatMoney(model.estimatedBill)}</div><p>after HST + OER</p></div>
+      <div class="card"><p class="label">Ontario Average</p><div class="num">${showBenchmark ? '746' : 'Off'}</div><p>${showBenchmark ? 'kWh/month' : 'benchmark hidden'}</p></div>
       <div class="card"><p class="label">Efficiency Score</p><div class="num">${model.efficiencyScore}</div><p>${Math.abs(model.comparisonPercent).toFixed(1)}% ${comparisonText} average</p></div>
     </section>
 
     <section class="section card">
-      <h2>Bill Breakdown</h2>
+      <h2>TOU Energy Breakdown</h2>
       <table>
         <thead><tr><th>Period</th><th>Share</th><th>Usage</th><th>Rate</th><th>Cost</th></tr></thead>
         <tbody>
@@ -193,6 +271,20 @@ function buildReportHTML({ monthlyUsage, onPeakPercent, midPeakPercent, model, i
     </section>
 
     <section class="section card">
+      <h2>Estimated Bill Stack</h2>
+      <table>
+        <tbody>
+          <tr><td>Electricity charge</td><td>${formatMoney(model.electricityCharge)}</td></tr>
+          <tr><td>Delivery + fixed charge</td><td>${formatMoney(model.deliveryCharge)}</td></tr>
+          <tr><td>Regulatory charge</td><td>${formatMoney(model.regulatoryCharge)}</td></tr>
+          <tr><td>HST</td><td>${formatMoney(model.hst)}</td></tr>
+          <tr><td>Ontario Electricity Rebate</td><td>-${formatMoney(model.oerCredit)}</td></tr>
+          <tr><td><strong>Estimated total</strong></td><td><strong>${formatMoney(model.estimatedBill)}</strong></td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section class="section card">
       <h2>Smart Recommendations</h2>
       ${insights.map(([title, text]) => `<div class="insight"><span class="dot"></span><div><h3>${title}</h3><p>${text}</p></div></div>`).join('')}
       <p><strong>Potential savings:</strong> ${formatMoney(model.potentialSavings)} / month by shifting 15% of on-peak usage to off-peak.</p>
@@ -200,8 +292,9 @@ function buildReportHTML({ monthlyUsage, onPeakPercent, midPeakPercent, model, i
 
     <section class="section card">
       <h2>Data Sources</h2>
-      <p><strong>Ontario Energy Board:</strong> Time-of-Use electricity rates used for bill estimation.</p>
-      <p><strong>Ontario Typical Residential Usage:</strong> 746 kWh/month benchmark used for comparison and scoring.</p>
+      <p><strong>Ontario Energy Board:</strong> TOU prices effective November 1, 2025: 9.8¢ off-peak, 15.7¢ mid-peak, 20.3¢ on-peak. Summer TOU periods run May 1 to October 31.</p>
+      <p><strong>Benchmark:</strong> 746 kWh/month is used as a product benchmark only, not a bill guarantee.</p>
+      <p><strong>Bill model:</strong> Delivery and fixed charges use a configurable profile because Ontario utility delivery rates vary by service territory.</p>
     </section>
   </main>
   <script>
@@ -369,8 +462,33 @@ function InputSlider({ label, value, min, max, step = 1, suffix, onChange }) {
   );
 }
 
-function OverviewScreen({ monthlyUsage, onPeakPercent, midPeakPercent, model }) {
-  const usageData = makeUsageData(monthlyUsage, onPeakPercent, midPeakPercent);
+const PERIOD_COLORS = {
+  onPeak: '#EF4444',
+  midPeak: '#F59E0B',
+  offPeak: '#16A34A',
+};
+
+const APPLIANCE_COLORS = ['#2563EB', '#16A34A', '#F59E0B', '#EF4444', '#7C3AED', '#64748B'];
+
+function BillStack({ model }) {
+  const rows = [
+    ['Electricity', model.electricityCharge],
+    ['Delivery + fixed', model.deliveryCharge],
+    ['Regulatory', model.regulatoryCharge],
+    ['HST', model.hst],
+    ['OER credit', -model.oerCredit],
+  ];
+
+  return (
+    <div className="bill-breakdown">
+      {rows.map(([label, value]) => <span key={label}>{label} <b>{value < 0 ? '-' : ''}{formatMoney(Math.abs(value))}</b></span>)}
+    </div>
+  );
+}
+
+function OverviewScreen({ monthlyUsage, onPeakPercent, model, dayType, showBenchmark }) {
+  const usageData = makeHourlyUsageData(monthlyUsage, dayType, model.billingProfile);
+  const applianceData = makeApplianceData(monthlyUsage, model.billingProfile);
   const insights = buildInsights(monthlyUsage, onPeakPercent, model);
   const comparisonText = model.comparisonPercent >= 0 ? 'above average' : 'below average';
 
@@ -379,34 +497,31 @@ function OverviewScreen({ monthlyUsage, onPeakPercent, midPeakPercent, model }) 
       <div className="metric-grid">
         {[
           ['Monthly Usage', monthlyUsage, 'kWh'],
-          ['Estimated Bill', formatMoney(model.estimatedBill), 'OEB TOU estimate'],
-          ['Ontario Average', ONTARIO_AVERAGE_KWH, 'kWh/month'],
+          ['Estimated Bill', formatMoney(model.estimatedBill), 'after HST + OER'],
+          ['Electricity Line', formatMoney(model.electricityCharge), 'TOU energy charge'],
           ['Efficiency Score', model.efficiencyScore, comparisonText],
         ].map(([l, v, u]) => <Card key={l}><p className="label">{l}</p><h2>{v}</h2><p className="muted">{u}</p></Card>)}
       </div>
 
       <div className="dash-grid">
         <Card className="chart-card">
-          <div className="chart-head"><div><p className="label">Usage Trend Line Chart</p><h3>Daily energy curve</h3></div><p className="muted">Morning → Night</p></div>
+          <div className="chart-head"><div><p className="label">24-Hour Usage</p><h3>{dayType === 'weekday' ? 'Weekday' : 'Weekend'} demand curve</h3></div><p className="muted">coloured by TOU period</p></div>
           <ResponsiveContainer width="100%" height={290}>
-            <AreaChart data={usageData}>
-              <defs><linearGradient id="usageFill" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="#2563EB" stopOpacity={0.18}/><stop offset="95%" stopColor="#2563EB" stopOpacity={0}/></linearGradient></defs>
+            <ReBarChart data={usageData}>
               <CartesianGrid stroke="rgba(15,23,42,0.06)" vertical={false} />
-              <XAxis dataKey="time" axisLine={false} tickLine={false} tick={{ fill: '#64748B', fontSize: 12 }} />
+              <XAxis dataKey="time" axisLine={false} tickLine={false} interval={2} tick={{ fill: '#64748B', fontSize: 11 }} />
               <YAxis axisLine={false} tickLine={false} tick={{ fill: '#64748B', fontSize: 12 }} />
-              <Tooltip contentStyle={{ borderRadius: 18, border: '1px solid rgba(15,23,42,0.08)' }} formatter={(value) => [`${value} kWh`, 'Usage']} />
-              <Area type="monotone" dataKey="usage" stroke="#2563EB" strokeWidth={3} fill="url(#usageFill)" dot={false} activeDot={{ r: 6 }} />
-            </AreaChart>
+              <Tooltip contentStyle={{ borderRadius: 8, border: '1px solid rgba(15,23,42,0.08)' }} formatter={(value, name, item) => [`${value} kWh`, item.payload.periodLabel]} />
+              <Bar dataKey="usage" radius={[6, 6, 0, 0]}>
+                {usageData.map(item => <Cell key={item.time} fill={PERIOD_COLORS[item.period]} />)}
+              </Bar>
+            </ReBarChart>
           </ResponsiveContainer>
         </Card>
 
         <Card className="bill-card">
-          <p className="label">Bill Estimation</p><h2>{formatMoney(model.estimatedBill)}</h2><p className="muted">Based on OEB Time-of-Use rates</p>
-          <div className="bill-breakdown">
-            <span>On-Peak <b>{model.onPeakKwh.toFixed(0)} kWh × 20.3¢</b></span>
-            <span>Mid-Peak <b>{model.midPeakKwh.toFixed(0)} kWh × 15.7¢</b></span>
-            <span>Off-Peak <b>{model.offPeakKwh.toFixed(0)} kWh × 9.8¢</b></span>
-          </div>
+          <p className="label">Full Bill Estimate</p><h2>{formatMoney(model.estimatedBill)}</h2><p className="muted">{model.profile.label} billing profile</p>
+          <BillStack model={model} />
           <div className="bill-bar"><span style={{ width: `${Math.min(100, monthlyUsage / 12)}%` }} /></div>
           <p className="bill-note">Your usage is {Math.abs(model.comparisonPercent).toFixed(1)}% {comparisonText}.</p>
           <CostScopeNote />
@@ -414,9 +529,26 @@ function OverviewScreen({ monthlyUsage, onPeakPercent, midPeakPercent, model }) 
       </div>
 
       <div className="dash-grid lower">
-        <Card className="comparison-card"><p className="label">Ontario Comparison</p><h3>Your Home vs Average Household</h3><div className="large-compare-line"><span className="avg-marker" style={{ left: '54%' }}>746</span><span className="home-marker" style={{ left: `${Math.min(92, Math.max(12, (monthlyUsage / 1200) * 100))}%` }}>{monthlyUsage}</span></div></Card>
-        <Card className="savings-card"><p className="label">Potential Savings</p><h2>{formatMoney(model.potentialSavings)}</h2><p>Shift 15% of on-peak usage to off-peak to reduce monthly cost.</p></Card>
+        {showBenchmark && <Card className="comparison-card"><p className="label">Ontario Comparison</p><h3>Your Home vs Average Household</h3><div className="large-compare-line"><span className="avg-marker" style={{ left: '54%' }}>746</span><span className="home-marker" style={{ left: `${Math.min(92, Math.max(12, (monthlyUsage / 1200) * 100))}%` }}>{monthlyUsage}</span></div></Card>}
+        <Card className="savings-card"><p className="label">Appliance Breakdown</p><h2>{applianceData[0].value} kWh</h2><p>{applianceData[0].name} is the largest modeled load in this profile.</p></Card>
       </div>
+
+      <Card className="appliance-card">
+        <div className="chart-head"><div><p className="label">Appliance Loads</p><h3>Monthly kWh by category</h3></div><p className="muted">{model.profile.label}</p></div>
+        <div className="appliance-layout">
+          <ResponsiveContainer width="100%" height={250}>
+            <PieChart>
+              <Pie data={applianceData} dataKey="value" nameKey="name" innerRadius={58} outerRadius={92} paddingAngle={2}>
+                {applianceData.map((item, index) => <Cell key={item.name} fill={APPLIANCE_COLORS[index % APPLIANCE_COLORS.length]} />)}
+              </Pie>
+              <Tooltip formatter={(value) => [`${value} kWh`, 'Monthly usage']} />
+            </PieChart>
+          </ResponsiveContainer>
+          <div className="appliance-list">
+            {applianceData.map((item, index) => <span key={item.name}><i style={{ background: APPLIANCE_COLORS[index % APPLIANCE_COLORS.length] }} />{item.name}<b>{item.value} kWh</b></span>)}
+          </div>
+        </div>
+      </Card>
 
       <div className="recommendations">
         {insights.map(([title, text]) => <Card key={title} className="rec-card"><Lightbulb color="#22C55E" /><div><h3>{title}</h3><p>{text}</p></div></Card>)}
@@ -425,31 +557,32 @@ function OverviewScreen({ monthlyUsage, onPeakPercent, midPeakPercent, model }) 
   );
 }
 
-function UsageScreen({ monthlyUsage, onPeakPercent, midPeakPercent, model }) {
-  const usageData = makeUsageData(monthlyUsage, onPeakPercent, midPeakPercent);
+function UsageScreen({ monthlyUsage, model, dayType }) {
+  const usageData = makeHourlyUsageData(monthlyUsage, dayType, model.billingProfile);
   const touData = [
-    { name: 'On-Peak', kwh: +model.onPeakKwh.toFixed(0), rate: '20.3¢ / kWh', cost: formatMoney(model.onPeakKwh * OEB_TOU_RATES.onPeak) },
-    { name: 'Mid-Peak', kwh: +model.midPeakKwh.toFixed(0), rate: '15.7¢ / kWh', cost: formatMoney(model.midPeakKwh * OEB_TOU_RATES.midPeak) },
-    { name: 'Off-Peak', kwh: +model.offPeakKwh.toFixed(0), rate: '9.8¢ / kWh', cost: formatMoney(model.offPeakKwh * OEB_TOU_RATES.offPeak) },
+    { name: 'On-Peak', kwh: +model.onPeakKwh.toFixed(0), rate: `${formatRate(OEB_TOU_RATES.onPeak)} / kWh`, cost: formatMoney(model.onPeakKwh * OEB_TOU_RATES.onPeak) },
+    { name: 'Mid-Peak', kwh: +model.midPeakKwh.toFixed(0), rate: `${formatRate(OEB_TOU_RATES.midPeak)} / kWh`, cost: formatMoney(model.midPeakKwh * OEB_TOU_RATES.midPeak) },
+    { name: 'Off-Peak', kwh: +model.offPeakKwh.toFixed(0), rate: `${formatRate(OEB_TOU_RATES.offPeak)} / kWh`, cost: formatMoney(model.offPeakKwh * OEB_TOU_RATES.offPeak) },
   ];
   return (
     <div className="usage-layout">
       <Card className="chart-card">
-        <div className="chart-head"><div><p className="label">Usage Page</p><h3>Time-of-use consumption curve</h3></div><p className="muted">kWh by daily window</p></div>
+        <div className="chart-head"><div><p className="label">24-Hour Usage</p><h3>{dayType === 'weekday' ? 'Weekday' : 'Weekend'} hourly curve</h3></div><p className="muted">kWh by hour</p></div>
         <ResponsiveContainer width="100%" height={380}>
-          <AreaChart data={usageData}>
-            <defs><linearGradient id="usageFill2" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="#2563EB" stopOpacity={0.2}/><stop offset="95%" stopColor="#2563EB" stopOpacity={0}/></linearGradient></defs>
+          <ReBarChart data={usageData}>
             <CartesianGrid stroke="rgba(15,23,42,0.06)" vertical={false} />
-            <XAxis dataKey="time" axisLine={false} tickLine={false} />
+            <XAxis dataKey="time" axisLine={false} tickLine={false} interval={1} tick={{ fontSize: 11 }} />
             <YAxis axisLine={false} tickLine={false} />
-            <Tooltip contentStyle={{ borderRadius: 18, border: '1px solid rgba(15,23,42,0.08)' }} />
-            <Area type="monotone" dataKey="usage" stroke="#2563EB" strokeWidth={3} fill="url(#usageFill2)" />
-          </AreaChart>
+            <Tooltip contentStyle={{ borderRadius: 8, border: '1px solid rgba(15,23,42,0.08)' }} formatter={(value, name, item) => [`${value} kWh`, item.payload.periodLabel]} />
+            <Bar dataKey="usage" radius={[6, 6, 0, 0]}>
+              {usageData.map(item => <Cell key={item.time} fill={PERIOD_COLORS[item.period]} />)}
+            </Bar>
+          </ReBarChart>
         </ResponsiveContainer>
       </Card>
       <div className="stack">
         <Card className="tou-card"><p className="label">TOU Breakdown</p><h3>{monthlyUsage} kWh monthly</h3>{touData.map(row => <div className="tou-row" key={row.name}><div><b>{row.name}</b><p className="muted">{row.kwh} kWh · {row.rate}</p></div><span className="tou-pill">{row.cost}</span></div>)}<CostScopeNote /></Card>
-        <Card className="source-detail"><p className="label">Data Source</p><h2>OEB</h2><p>Bill estimation is calculated with Ontario Energy Board Time-of-Use pricing.</p></Card>
+        <Card className="source-detail"><p className="label">Bill Stack</p><h2>{formatMoney(model.estimatedBill)}</h2><BillStack model={model} /></Card>
       </div>
     </div>
   );
@@ -465,26 +598,53 @@ function InsightsScreen({ monthlyUsage, onPeakPercent, model }) {
   );
 }
 
-function ComparisonScreen({ monthlyUsage, model }) {
+function ComparisonScreen({ monthlyUsage, model, showBenchmark }) {
   const userLeft = Math.min(94, Math.max(8, (monthlyUsage / 1200) * 100));
   return (
     <div className="comparison-layout">
-      <Card className="comparison-card"><p className="label">Ontario Household Benchmark</p><h3>Your home compared with 746 kWh/month</h3><div className="comparison-meter"><span className="fill" style={{ width: `${userLeft}%` }} /><span className="meter-label" style={{ left: '62%' }}>Ontario Average · 746</span><span className="meter-label" style={{ left: `${userLeft}%` }}>Your Home · {monthlyUsage}</span></div><p className="bill-note">You are {Math.abs(model.comparisonPercent).toFixed(1)}% {model.comparisonPercent >= 0 ? 'above' : 'below'} the Ontario average household.</p></Card>
-      <div className="mini-grid"><Card><p className="label">Your Usage</p><h2>{monthlyUsage}</h2><p className="muted">kWh/month</p></Card><Card><p className="label">Average</p><h2>746</h2><p className="muted">kWh/month</p></Card><Card><p className="label">Score</p><h2>{model.efficiencyScore}</h2><p className="muted">efficiency</p></Card></div>
+      {showBenchmark ? <Card className="comparison-card"><p className="label">Ontario Household Benchmark</p><h3>Your home compared with 746 kWh/month</h3><div className="comparison-meter"><span className="fill" style={{ width: `${userLeft}%` }} /><span className="meter-label" style={{ left: '62%' }}>Ontario Average · 746</span><span className="meter-label" style={{ left: `${userLeft}%` }}>Your Home · {monthlyUsage}</span></div><p className="bill-note">You are {Math.abs(model.comparisonPercent).toFixed(1)}% {model.comparisonPercent >= 0 ? 'above' : 'below'} the Ontario average household.</p></Card> : <Card className="comparison-card"><p className="label">Benchmark Hidden</p><h3>Ontario comparison is turned off</h3><p className="bill-note">Use Settings to bring the benchmark back into the dashboard.</p></Card>}
+      <div className="mini-grid"><Card><p className="label">Your Usage</p><h2>{monthlyUsage}</h2><p className="muted">kWh/month</p></Card><Card><p className="label">Estimated Bill</p><h2>{formatMoney(model.estimatedBill)}</h2><p className="muted">after credits and tax</p></Card><Card><p className="label">Score</p><h2>{model.efficiencyScore}</h2><p className="muted">efficiency</p></Card></div>
     </div>
   );
 }
 
-function SettingsScreen({ monthlyUsage, onPeakPercent, midPeakPercent, model }) {
+function Toggle({ checked, onChange, label }) {
+  return <button type="button" className={checked ? 'toggle on' : 'toggle'} aria-pressed={checked} aria-label={label} onClick={() => onChange(!checked)} />;
+}
+
+function SettingsScreen({ monthlyUsage, model, showBenchmark, setShowBenchmark, billingProfile, setBillingProfile, dayType, setDayType, resetScenario }) {
   return (
     <div className="settings-layout">
-      <Card className="settings-card"><p className="label">Settings</p><h3>Dashboard preferences</h3><p>Scenario assumptions used throughout the calculator.</p><div className="settings-row"><span>Use OEB TOU pricing</span><span className="toggle" /></div><div className="settings-row"><span>Show Ontario comparison</span><span className="toggle" /></div><div className="settings-row"><span>Enable rule-based insights</span><span className="toggle" /></div></Card>
-      <div className="export-box"><p className="label">Current Scenario</p><h3>{monthlyUsage} kWh</h3><p className="muted">On-Peak {model.onPeakPercent}% · Mid-Peak {model.midPeakPercent}% · Off-Peak {model.offPeakPercent}%</p><p className="empty-note">Use the sliders above to change the dashboard model in real time.</p><CostScopeNote /></div>
+      <Card className="settings-card">
+        <p className="label">Settings</p>
+        <h3>Dashboard preferences</h3>
+        <p>These controls change the scenario and are saved on this browser.</p>
+        <label className="field-row"><span>Billing profile</span><select value={billingProfile} onChange={(event) => setBillingProfile(event.target.value)}>{Object.entries(BILLING_PROFILES).map(([key, profile]) => <option key={key} value={key}>{profile.label}</option>)}</select></label>
+        <label className="field-row"><span>Usage mode</span><select value={dayType} onChange={(event) => setDayType(event.target.value)}><option value="weekday">Weekday</option><option value="weekend">Weekend</option></select></label>
+        <div className="settings-row"><span>Show Ontario benchmark</span><Toggle checked={showBenchmark} onChange={setShowBenchmark} label="Show Ontario benchmark" /></div>
+        <div className="settings-row"><span>Use OEB TOU pricing</span><Toggle checked={true} onChange={() => {}} label="Use OEB TOU pricing" /></div>
+        <Button secondary onClick={resetScenario}>Reset Scenario</Button>
+      </Card>
+      <div className="export-box"><p className="label">Current Scenario</p><h3>{monthlyUsage} kWh</h3><p className="muted">On-Peak {model.onPeakPercent}% · Mid-Peak {model.midPeakPercent}% · Off-Peak {model.offPeakPercent}%</p><BillStack model={model} /><CostScopeNote /></div>
     </div>
   );
 }
 
-function Dashboard({ backHome, monthlyUsage, setMonthlyUsage, onPeakPercent, setOnPeakPercent, midPeakPercent, setMidPeakPercent, model }) {
+function DataAssumptions({ model }) {
+  return (
+    <Card className="assumption-card">
+      <p className="label">Data assumptions</p>
+      <div className="assumption-grid">
+        <div><b>OEB TOU prices</b><span>Effective Nov 1, 2025. Off {formatRate(OEB_TOU_RATES.offPeak)}, Mid {formatRate(OEB_TOU_RATES.midPeak)}, On {formatRate(OEB_TOU_RATES.onPeak)}.</span></div>
+        <div><b>Summer periods</b><span>May 1 to Oct 31: on-peak weekdays 11 AM-5 PM; weekends and holidays off-peak.</span></div>
+        <div><b>Benchmark</b><span>746 kWh/month is used only as a product comparison benchmark.</span></div>
+        <div><b>Bill model</b><span>{model.profile.label}: delivery {formatRate(model.profile.deliveryRate)}/kWh plus {formatMoney(model.profile.fixedCharge)} fixed charge before HST/OER.</span></div>
+      </div>
+    </Card>
+  );
+}
+
+function Dashboard({ backHome, monthlyUsage, setMonthlyUsage, onPeakPercent, setOnPeakPercent, midPeakPercent, setMidPeakPercent, model, showBenchmark, setShowBenchmark, billingProfile, setBillingProfile, dayType, setDayType, resetScenario }) {
   const [active, setActive] = useState('Overview');
   const reportInsights = buildInsights(monthlyUsage, onPeakPercent, model);
   const menu = [[Home, 'Overview'], [LineChart, 'Usage'], [Lightbulb, 'Insights'], [BarChart3, 'Comparison'], [Settings, 'Settings']];
@@ -506,9 +666,9 @@ function Dashboard({ backHome, monthlyUsage, setMonthlyUsage, onPeakPercent, set
       </aside>
 
       <main className="dash-main">
-        <div className="mobile-topbar"><Button secondary onClick={backHome} ariaLabel="Back to home"><ArrowLeft size={16} /> Home</Button><Button onClick={() => exportEnergyReport({ monthlyUsage, onPeakPercent, midPeakPercent, model, insights: reportInsights })} ariaLabel="Export report"><FileText size={16} /> Export</Button></div>
+        <div className="mobile-topbar"><Button secondary onClick={backHome} ariaLabel="Back to home"><ArrowLeft size={16} /> Home</Button><Button onClick={() => exportEnergyReport({ monthlyUsage, onPeakPercent, midPeakPercent, model, insights: reportInsights, showBenchmark })} ariaLabel="Export report"><FileText size={16} /> Export</Button></div>
         <div className="mobile-tabs" aria-label="Dashboard sections">{menu.map(([Icon, label]) => <button key={label} onClick={() => setActive(label)} className={active === label ? 'active' : ''} aria-current={active === label ? 'page' : undefined}><Icon size={16} /><span>{label}</span></button>)}</div>
-        <div className="page-title-row"><div><p className="eyebrow blue-text">{active}</p><h1>{active === 'Overview' ? 'Energy Overview' : active}</h1><p className="muted">{descriptions[active]}</p></div><Button onClick={() => exportEnergyReport({ monthlyUsage, onPeakPercent, midPeakPercent, model, insights: reportInsights })}><FileText size={16} /> Export Report</Button></div>
+        <div className="page-title-row"><div><p className="eyebrow blue-text">{active}</p><h1>{active === 'Overview' ? 'Energy Overview' : active}</h1><p className="muted">{descriptions[active]}</p></div><Button onClick={() => exportEnergyReport({ monthlyUsage, onPeakPercent, midPeakPercent, model, insights: reportInsights, showBenchmark })}><FileText size={16} /> Export Report</Button></div>
 
         <div className="tariff-strip" aria-label="Ontario time-of-use rates">
           {tariffRows.map(([period, rate, detail, color]) => <span key={period}><i style={{ background: color }} /> <b>{period}</b> {rate} <em>{detail}</em></span>)}
@@ -523,26 +683,60 @@ function Dashboard({ backHome, monthlyUsage, setMonthlyUsage, onPeakPercent, set
           <InputSlider label="Mid-Peak Usage" value={model.midPeakPercent} min={0} max={Math.max(0, 100 - model.onPeakPercent)} suffix="%" onChange={setMidPeakPercent} />
         </div>
 
-        {active === 'Overview' && <OverviewScreen monthlyUsage={monthlyUsage} onPeakPercent={onPeakPercent} midPeakPercent={midPeakPercent} model={model} />}
-        {active === 'Usage' && <UsageScreen monthlyUsage={monthlyUsage} onPeakPercent={onPeakPercent} midPeakPercent={midPeakPercent} model={model} />}
+        {active === 'Overview' && <OverviewScreen monthlyUsage={monthlyUsage} onPeakPercent={onPeakPercent} model={model} dayType={dayType} showBenchmark={showBenchmark} />}
+        {active === 'Usage' && <UsageScreen monthlyUsage={monthlyUsage} model={model} dayType={dayType} />}
         {active === 'Insights' && <InsightsScreen monthlyUsage={monthlyUsage} onPeakPercent={onPeakPercent} model={model} />}
-        {active === 'Comparison' && <ComparisonScreen monthlyUsage={monthlyUsage} model={model} />}
-        {active === 'Settings' && <SettingsScreen monthlyUsage={monthlyUsage} onPeakPercent={onPeakPercent} midPeakPercent={midPeakPercent} model={model} />}
+        {active === 'Comparison' && <ComparisonScreen monthlyUsage={monthlyUsage} model={model} showBenchmark={showBenchmark} />}
+        {active === 'Settings' && <SettingsScreen monthlyUsage={monthlyUsage} model={model} showBenchmark={showBenchmark} setShowBenchmark={setShowBenchmark} billingProfile={billingProfile} setBillingProfile={setBillingProfile} dayType={dayType} setDayType={setDayType} resetScenario={resetScenario} />}
+        <DataAssumptions model={model} />
       </main>
     </div>
   );
 }
 
 function App() {
+  const defaultState = {
+    monthlyUsage: 820,
+    onPeakPercent: 35,
+    midPeakPercent: 0,
+    billingProfile: 'detached',
+    dayType: 'weekday',
+    showBenchmark: true,
+  };
+  const [savedState, setSavedState] = useState(() => {
+    try {
+      return { ...defaultState, ...JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}') };
+    } catch {
+      return defaultState;
+    }
+  });
   const [view, setView] = useState('dashboard');
-  const [monthlyUsage, setMonthlyUsage] = useState(820);
-  const [onPeakPercent, setOnPeakPercent] = useState(35);
-  const [midPeakPercent, setMidPeakPercent] = useState(0);
-  const model = calculateEnergyModel(monthlyUsage, onPeakPercent, midPeakPercent);
+  const [monthlyUsage, setMonthlyUsage] = useState(savedState.monthlyUsage);
+  const [onPeakPercent, setOnPeakPercent] = useState(savedState.onPeakPercent);
+  const [midPeakPercent, setMidPeakPercent] = useState(savedState.midPeakPercent);
+  const [billingProfile, setBillingProfile] = useState(savedState.billingProfile);
+  const [dayType, setDayType] = useState(savedState.dayType);
+  const [showBenchmark, setShowBenchmark] = useState(savedState.showBenchmark);
+  const model = calculateEnergyModel(monthlyUsage, onPeakPercent, midPeakPercent, billingProfile);
+
+  useEffect(() => {
+    const nextState = { monthlyUsage, onPeakPercent, midPeakPercent: model.midPeakPercent, billingProfile, dayType, showBenchmark };
+    setSavedState(nextState);
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(nextState));
+  }, [monthlyUsage, onPeakPercent, model.midPeakPercent, billingProfile, dayType, showBenchmark]);
+
+  function resetScenario() {
+    setMonthlyUsage(defaultState.monthlyUsage);
+    setOnPeakPercent(defaultState.onPeakPercent);
+    setMidPeakPercent(defaultState.midPeakPercent);
+    setBillingProfile(defaultState.billingProfile);
+    setDayType(defaultState.dayType);
+    setShowBenchmark(defaultState.showBenchmark);
+  }
 
   return view === 'landing'
     ? <LandingPage openDashboard={() => setView('dashboard')} model={model} />
-    : <Dashboard backHome={() => setView('landing')} monthlyUsage={monthlyUsage} setMonthlyUsage={setMonthlyUsage} onPeakPercent={onPeakPercent} setOnPeakPercent={setOnPeakPercent} midPeakPercent={midPeakPercent} setMidPeakPercent={setMidPeakPercent} model={model} />;
+    : <Dashboard backHome={() => setView('landing')} monthlyUsage={monthlyUsage} setMonthlyUsage={setMonthlyUsage} onPeakPercent={onPeakPercent} setOnPeakPercent={setOnPeakPercent} midPeakPercent={midPeakPercent} setMidPeakPercent={setMidPeakPercent} model={model} showBenchmark={showBenchmark} setShowBenchmark={setShowBenchmark} billingProfile={billingProfile} setBillingProfile={setBillingProfile} dayType={dayType} setDayType={setDayType} resetScenario={resetScenario} />;
 }
 
 createRoot(document.getElementById('root')).render(<App />);
