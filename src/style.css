@@ -82,7 +82,10 @@ footer div { display: flex; gap: 24px; }
 .side-item.active { background: rgba(37,99,235,0.08); color: #2563EB; }
 .sidebar-note { position: absolute; left: 20px; right: 20px; bottom: 24px; padding: 16px; border-radius: 8px; background: rgba(248,250,252,0.78); border: 1px solid rgba(15,23,42,0.06); }
 .sidebar-note p { margin: 0 0 10px; font-size: 12px; font-weight: 800; color: #0F172A; }
-.sidebar-note span { display: block; margin-top: 8px; color: #64748B; font-size: 12px; }
+.sidebar-note span,
+.sidebar-note a { display: block; margin-top: 8px; color: #64748B; font-size: 12px; }
+.sidebar-note a { font-weight: 800; transition: color 160ms ease; }
+.sidebar-note a:hover { color: #2563EB; }
 .dash-main { position: relative; z-index: 1; flex: 1; padding: 40px; }
 .dash-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 28px; }
 .dash-top h1 { margin-top: 8px; font-size: 44px; }

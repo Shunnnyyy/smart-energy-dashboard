@@ -734,7 +734,12 @@ function Dashboard({ backHome, monthlyUsage, setMonthlyUsage, onPeakPercent, set
       <aside className="sidebar">
         <button className="logo sidebar-logo" onClick={backHome}><span><Zap size={16} /></span>SmartEnergy</button>
         {menu.map(([Icon, label]) => <button key={label} onClick={() => setActive(label)} className={active === label ? 'side-item active' : 'side-item'} aria-current={active === label ? 'page' : undefined}><Icon size={18} />{label}</button>)}
-        <div className="sidebar-note"><p>Data Sources</p><span>OEB TOU Rates</span><span>Ontario 746 kWh Benchmark</span></div>
+        <div className="sidebar-note">
+          <p>Connected Notes</p>
+          <a href={POWER_IN_PRACTICE_URL} target="_blank" rel="noreferrer">Power in Practice</a>
+          <a href={NOCTIS_URL} target="_blank" rel="noreferrer">NOCTIS photo map</a>
+          <a href={LUMEN_SHIFT_URL} target="_blank" rel="noreferrer">Lumen Shift</a>
+        </div>
       </aside>
 
       <main className="dash-main">
