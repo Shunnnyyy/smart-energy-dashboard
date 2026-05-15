@@ -22,6 +22,8 @@ const LAST_VERIFIED = 'May 15, 2026';
 const OEB_RATES_URL = 'https://www.oeb.ca/consumer-information-and-protection/electricity-rates';
 const OEB_ANNOUNCEMENT_URL = 'https://www.oeb.ca/newsroom/2025/ontario-energy-board-announces-changes-electricity-prices-households-small-businesses';
 const ONTARIO_OER_URL = 'https://www.ontario.ca/page/manage-energy-costs-your-home';
+const LUMEN_SHIFT_URL = 'https://lumen-shift.vercel.app';
+const POWER_IN_PRACTICE_URL = 'https://power-in-practice.vercel.app';
 
 const BILLING_PROFILES = {
   condo: {
@@ -428,7 +430,7 @@ function LandingPage({ openDashboard, model }) {
       <EnergyBackground />
       <nav className="navbar">
         <div className="logo"><span><Zap size={16} /></span>SmartEnergy</div>
-        <div className="nav-links"><a href="#features">Features</a><button onClick={openDashboard}>Dashboard</button><a href="#data">Data Sources</a><a href="#insights">Insights</a></div>
+        <div className="nav-links"><a href="#features">Features</a><button onClick={openDashboard}>Dashboard</button><a href="#data">Data Sources</a><a href="#insights">Insights</a><a href="#project-line">Project Line</a></div>
         <Button onClick={openDashboard}>Start Tracking</Button>
       </nav>
 
@@ -476,6 +478,28 @@ function LandingPage({ openDashboard, model }) {
         <Card><p className="label">Your Home</p><h2>820 kWh</h2></Card>
         <Card><p className="label">Ontario Average</p><h2>746 kWh</h2></Card>
         <div className="compare-line"><span className="avg-dot" /><span className="home-dot" /></div>
+      </section>
+
+      <section id="project-line" className="section project-line">
+        <p className="eyebrow blue-text">Connected portfolio system</p>
+        <h2 className="section-title">From energy behavior to adaptive city infrastructure</h2>
+        <div className="project-line-grid">
+          <a className="line-card archive-link" href={POWER_IN_PRACTICE_URL}>
+            <span>Research archive</span>
+            <h3>Power in Practice</h3>
+            <p>Frames the question: where does wasted energy show up in daily life and urban space?</p>
+          </a>
+          <a className="line-card dashboard-link" href="#top" onClick={(event) => { event.preventDefault(); openDashboard(); }}>
+            <span>Data dashboard</span>
+            <h3>SmartEnergy</h3>
+            <p>Turns home electricity use, Ontario TOU rates, and behavior into measurable decisions.</p>
+          </a>
+          <a className="line-card lumen-link" href={LUMEN_SHIFT_URL}>
+            <span>Urban solution</span>
+            <h3>Lumen Shift</h3>
+            <p>Applies the same energy logic to public lighting, photography, and sensor-based control.</p>
+          </a>
+        </div>
       </section>
 
       <section className="cta">
