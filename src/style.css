@@ -219,6 +219,18 @@ footer div { display: flex; gap: 24px; }
   transition: transform 700ms ease, opacity 180ms ease;
 }
 
+.line-card::after {
+  content: "";
+  position: absolute;
+  right: 24px;
+  bottom: 24px;
+  width: 96px;
+  height: 70px;
+  opacity: 0.22;
+  pointer-events: none;
+  transition: transform 500ms ease, opacity 180ms ease;
+}
+
 .line-card:hover {
   transform: translateY(-6px) rotateX(1deg);
   box-shadow: 0 28px 80px rgba(37,99,235,0.12);
@@ -227,6 +239,11 @@ footer div { display: flex; gap: 24px; }
 .line-card:hover::before {
   opacity: 0.18;
   transform: rotate(18deg) scale(1.08);
+}
+
+.line-card:hover::after {
+  opacity: 0.42;
+  transform: translateY(-4px);
 }
 
 .line-card span {
@@ -267,6 +284,13 @@ footer div { display: flex; gap: 24px; }
   color: #F8F5EE;
 }
 
+.archive-link::after {
+  background:
+    linear-gradient(90deg, transparent 0 28%, currentColor 28% 30%, transparent 30% 58%, currentColor 58% 60%, transparent 60%),
+    linear-gradient(currentColor 0 2px, transparent 2px);
+  background-size: 100% 100%, 24px 24px;
+}
+
 .noctis-link {
   color: #F8FAFC;
   background:
@@ -286,9 +310,37 @@ footer div { display: flex; gap: 24px; }
   color: #FFFFFF;
 }
 
+.noctis-link::after {
+  width: 86px;
+  height: 86px;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 50% 50%, rgba(255,255,255,0.8) 0 5px, transparent 6px),
+    radial-gradient(circle at 50% 50%, rgba(255,255,255,0.24), transparent 64%);
+}
+
 .dashboard-link {
   border-color: rgba(37,99,235,0.18);
-  background: linear-gradient(135deg, rgba(37,99,235,0.14), rgba(34,197,94,0.1)), rgba(255,255,255,0.84);
+  background:
+    linear-gradient(rgba(15,23,42,0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(15,23,42,0.045) 1px, transparent 1px),
+    linear-gradient(135deg, rgba(37,99,235,0.08), rgba(34,197,94,0.06)),
+    rgba(255,255,255,0.86);
+  background-size: 24px 24px, 24px 24px, 100% 100%, 100% 100%;
+}
+
+.dashboard-link::before {
+  border-radius: 8px;
+}
+
+.dashboard-link::after {
+  border: 1px solid rgba(15,23,42,0.18);
+  border-radius: 8px;
+  background:
+    linear-gradient(to top, rgba(37,99,235,0.62) 0 58%, transparent 58%) 16px 20px / 12px 38px no-repeat,
+    linear-gradient(to top, rgba(34,197,94,0.62) 0 38%, transparent 38%) 42px 20px / 12px 38px no-repeat,
+    linear-gradient(to top, rgba(15,23,42,0.48) 0 72%, transparent 72%) 68px 20px / 12px 38px no-repeat,
+    rgba(255,255,255,0.52);
 }
 
 .lumen-link {
@@ -298,6 +350,13 @@ footer div { display: flex; gap: 24px; }
     linear-gradient(90deg, rgba(15,23,42,0.08) 1px, transparent 1px),
     #F7F7F2;
   background-size: 28px 28px;
+}
+
+.lumen-link::after {
+  background:
+    radial-gradient(circle at 50% 18%, rgba(15,23,42,0.72) 0 6px, transparent 7px),
+    linear-gradient(90deg, transparent 48%, rgba(15,23,42,0.72) 49% 51%, transparent 52%),
+    radial-gradient(ellipse at 50% 86%, rgba(15,23,42,0.2), transparent 58%);
 }
 
 @media (max-width: 1100px) {
