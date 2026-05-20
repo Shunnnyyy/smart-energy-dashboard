@@ -519,22 +519,22 @@ function LandingPage({ openDashboard, model }) {
           <a className="line-card archive-link" href={POWER_IN_PRACTICE_URL}>
             <span>Research notes</span>
             <h3>Power in Practice</h3>
-            <p>Looks at where electricity becomes visible in daily life, public data, and nighttime space.</p>
+            <p>Everyday electricity notes connecting habits, public data, cost, and visible nighttime patterns.</p>
           </a>
           <a className="line-card noctis-link" href={NOCTIS_URL}>
             <span>Photo map</span>
             <h3>NOCTIS</h3>
-            <p>Collects Toronto night photographs as map anchors, light conditions, and visual field notes.</p>
+            <p>A night light photo archive where Toronto images become map anchors, lux notes, and field observations.</p>
           </a>
           <a className="line-card dashboard-link" href="#top" onClick={(event) => { event.preventDefault(); openDashboard(); }}>
             <span>Data dashboard</span>
             <h3>SmartEnergy</h3>
-            <p>Lets household electricity assumptions become sliders, charts, and reportable scenarios.</p>
+            <p>A household energy calculator where usage assumptions become sliders, charts, and reportable scenarios.</p>
           </a>
           <a className="line-card lumen-link" href={LUMEN_SHIFT_URL}>
             <span>Light prototype</span>
             <h3>Lumen Shift</h3>
-            <p>Imagines city lights as responsive objects shaped by motion, quiet hours, and field observation.</p>
+            <p>A responsive lighting study shaped by lux readings, quiet hours, motion, and field observation.</p>
           </a>
         </div>
       </section>
