@@ -196,6 +196,13 @@ const features = [
   [Lightbulb, 'Pattern Notes', 'Turn usage patterns into practical reminders and simple next steps.'],
 ];
 
+const practicalSteps = [
+  ['Find the peak', 'Use the dashboard to identify when most usage sits in expensive hours.'],
+  ['Choose one shift', 'Pick one habit to move first: laundry, dishwasher, EV charging, or lighting schedule.'],
+  ['Check the place', 'Connect the habit back to a real room, street, or photo observation instead of only a number.'],
+  ['Write the action', 'Export a short note with the cost estimate, reason, and next experiment.'],
+];
+
 const tariffRows = [
   ['On-Peak', '20.3¢', 'Weekday demand hours', '#EF4444'],
   ['Mid-Peak', '15.7¢', 'Shoulder periods', '#F59E0B'],
@@ -498,18 +505,32 @@ function LandingPage({ openDashboard, model }) {
       </section>
 
       <section className="section narrow">
-        <Card className="timeline-card">
+        <div className="timeline-strip">
           <p className="eyebrow blue-text">How it works</p>
           <div className="timeline">
             {['Input Usage', 'Calculate Bill', 'Compare + Recommend'].map((step, i) => <div className="step" key={step}><span>{i + 1}</span><h3>{step}</h3></div>)}
           </div>
-        </Card>
+        </div>
       </section>
 
       <section id="insights" className="section comparison">
         <Card><p className="label">Your Home</p><h2>820 kWh</h2></Card>
         <Card><p className="label">Ontario Average</p><h2>746 kWh</h2></Card>
         <div className="compare-line"><span className="avg-dot" /><span className="home-dot" /></div>
+      </section>
+
+      <section className="section action-section">
+        <p className="eyebrow blue-text">Practical use</p>
+        <h2 className="section-title">Turn a bill estimate into one small decision.</h2>
+        <div className="action-grid">
+          {practicalSteps.map(([title, text], index) => (
+            <div className="action-step" key={title}>
+              <span>{String(index + 1).padStart(2, '0')}</span>
+              <h3>{title}</h3>
+              <p>{text}</p>
+            </div>
+          ))}
+        </div>
       </section>
 
       <section id="project-line" className="section project-line">
@@ -768,6 +789,7 @@ function Dashboard({ backHome, monthlyUsage, setMonthlyUsage, onPeakPercent, set
         {menu.map(([Icon, label]) => <button key={label} onClick={() => setActive(label)} className={active === label ? 'side-item active' : 'side-item'} aria-current={active === label ? 'page' : undefined}><Icon size={18} />{label}</button>)}
         <div className="sidebar-note">
           <p>Connected Notes</p>
+          <span>Use this page after NOCTIS field data to estimate whether timing and behavior may explain the pattern.</span>
           <a href={POWER_IN_PRACTICE_URL} target="_blank" rel="noreferrer">Power in Practice</a>
           <a href={NOCTIS_URL} target="_blank" rel="noreferrer">NOCTIS photo map</a>
           <a href={LUMEN_SHIFT_URL} target="_blank" rel="noreferrer">Lumen Shift</a>
