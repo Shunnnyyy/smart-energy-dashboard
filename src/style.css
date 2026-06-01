@@ -8,7 +8,7 @@
 }
 
 * { box-sizing: border-box; }
-html { scroll-behavior: smooth; }
+html { scroll-behavior: smooth; scroll-padding-top: 96px; }
 body { margin: 0; font-family: Inter, system-ui, sans-serif; background: #F8FAFC; color: #0F172A; line-height: 1.6; }
 button, a, input { font-family: inherit; }
 a { color: inherit; text-decoration: none; }
@@ -88,8 +88,8 @@ h1 { margin: 0; font-size: clamp(48px, 7vw, 82px); line-height: 1; letter-spacin
 }
 .card:hover, .input-card:hover {
   border-color: rgba(37,99,235,0.18);
-  box-shadow: 0 18px 48px rgba(37,99,235,0.10);
-  transform: translateY(-8px);
+  box-shadow: 0 14px 34px rgba(37,99,235,0.08);
+  transform: translateY(-5px);
 }
 .card:hover::before, .input-card:hover::before {
   opacity: 1;
@@ -100,7 +100,7 @@ h1 { margin: 0; font-size: clamp(48px, 7vw, 82px); line-height: 1; letter-spacin
 .card h2 { margin: 18px 0 0; font-size: 48px; line-height: 1; letter-spacing: 0; }
 .muted { color: #64748B; font-size: 14px; }
 
-.section { position: relative; max-width: 1280px; margin: 0 auto; padding: 80px 24px; }
+.section { position: relative; max-width: 1280px; margin: 0 auto; padding: 80px 24px; scroll-margin-top: 104px; }
 .section.narrow { max-width: 1000px; }
 .section-title { max-width: 860px; margin: 12px 0 36px; font-size: clamp(34px, 5vw, 48px); line-height: 1.08; letter-spacing: 0; font-weight: 800; }
 .data-grid, .feature-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
@@ -110,23 +110,25 @@ h1 { margin: 0; font-size: clamp(48px, 7vw, 82px); line-height: 1; letter-spacin
 .learning-grid {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 16px;
+  gap: 0;
+  border: 1px solid rgba(15,23,42,0.10);
 }
 .learning-grid a {
   min-height: 280px;
   display: grid;
   align-content: space-between;
-  border: 1px solid rgba(15,23,42,0.08);
-  border-radius: 8px;
+  border-right: 1px solid rgba(15,23,42,0.10);
+  border-radius: 0;
   padding: 24px;
   background: rgba(255,255,255,0.74);
-  box-shadow: 0 20px 70px rgba(15,23,42,0.04);
+  box-shadow: none;
   backdrop-filter: blur(20px);
   transition: transform 180ms ease, box-shadow 180ms ease;
 }
+.learning-grid a:last-child { border-right: 0; }
 .learning-grid a:hover {
-  transform: translateY(-6px);
-  box-shadow: 0 28px 80px rgba(37,99,235,0.12);
+  transform: translateY(-4px);
+  box-shadow: 0 18px 44px rgba(37,99,235,0.10);
 }
 .learning-grid span {
   color: #2563EB;
@@ -318,7 +320,8 @@ footer div { display: flex; gap: 24px; }
 .project-line-grid {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 16px;
+  gap: 0;
+  border: 1px solid rgba(15,23,42,0.10);
 }
 
 .line-card {
@@ -327,16 +330,19 @@ footer div { display: flex; gap: 24px; }
   min-height: 300px;
   display: grid;
   align-content: space-between;
-  border: 1px solid rgba(15,23,42,0.08);
-  border-radius: 8px;
+  border: 0;
+  border-right: 1px solid rgba(15,23,42,0.10);
+  border-radius: 0;
   padding: 24px;
   background: rgba(255,255,255,0.74);
-  box-shadow: 0 20px 70px rgba(15,23,42,0.04);
+  box-shadow: none;
   backdrop-filter: blur(20px);
   transition:
     transform 180ms ease,
     box-shadow 180ms ease;
 }
+
+.line-card:last-child { border-right: 0; }
 
 .line-card::before {
   content: "";
@@ -362,8 +368,8 @@ footer div { display: flex; gap: 24px; }
 }
 
 .line-card:hover {
-  transform: translateY(-8px) rotateX(1deg);
-  box-shadow: 0 32px 90px rgba(37,99,235,0.16);
+  transform: translateY(-5px) rotateX(1deg);
+  box-shadow: 0 18px 46px rgba(37,99,235,0.12);
 }
 
 .line-card:hover::before {
@@ -520,6 +526,13 @@ footer div { display: flex; gap: 24px; }
   .hero { grid-template-columns: 1fr; }
   .stats-grid, .feature-grid, .comparison, .input-grid, .data-grid, .learning-grid, .action-grid { grid-template-columns: 1fr; }
   .project-line-grid { grid-template-columns: 1fr; }
+  .learning-grid a,
+  .line-card {
+    border-right: 0;
+    border-bottom: 1px solid rgba(15,23,42,0.10);
+  }
+  .learning-grid a:last-child,
+  .line-card:last-child { border-bottom: 0; }
   .timeline { grid-template-columns: 1fr; }
   .step::after { display: none; }
   .sidebar { display: none; }
