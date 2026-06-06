@@ -607,6 +607,33 @@ footer div { display: flex; gap: 24px; }
   margin-top: 4px;
 }
 
+.field-note-banner {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 16px;
+  align-items: start;
+  margin: -10px 0 22px;
+  padding: 14px 0;
+  border-top: 1px dashed rgba(15,23,42,0.18);
+  border-bottom: 1px solid rgba(15,23,42,0.08);
+}
+
+.field-note-banner span {
+  color: #2563EB;
+  font-size: 11px;
+  font-weight: 850;
+  letter-spacing: 0.20em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.field-note-banner p {
+  max-width: 780px;
+  margin: 0;
+  color: #475569;
+  line-height: 1.65;
+}
+
 .page-title-row h1,
 .insight-hero h2,
 .source-detail h2,
@@ -727,6 +754,12 @@ footer div { display: flex; gap: 24px; }
   .page-title-row h1 {
     font-size: 36px;
     line-height: 1.08;
+  }
+
+  .field-note-banner {
+    grid-template-columns: 1fr;
+    gap: 6px;
+    margin-top: -4px;
   }
 
   .tariff-strip {

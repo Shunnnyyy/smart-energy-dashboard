@@ -866,6 +866,10 @@ function Dashboard({ backHome, monthlyUsage, setMonthlyUsage, onPeakPercent, set
         <div className="mobile-topbar"><Button secondary onClick={backHome} ariaLabel="Back to home"><ArrowLeft size={16} /> Home</Button><Button onClick={() => exportEnergyReport({ monthlyUsage, onPeakPercent, midPeakPercent, model, insights: reportInsights, showBenchmark, scenarioLabel, dayType })} ariaLabel="Export report"><FileText size={16} /> Export</Button></div>
         <div className="mobile-tabs" aria-label="Dashboard sections">{menu.map(([Icon, label]) => <button key={label} onClick={() => setActive(label)} className={active === label ? 'active' : ''} aria-current={active === label ? 'page' : undefined}><Icon size={16} /><span>{label}</span></button>)}</div>
         <div className="page-title-row"><div><p className="eyebrow blue-text">{active}</p><h1>{active === 'Overview' ? 'Energy Overview' : active}</h1><p className="muted">{descriptions[active]}</p></div><Button onClick={() => exportEnergyReport({ monthlyUsage, onPeakPercent, midPeakPercent, model, insights: reportInsights, showBenchmark, scenarioLabel, dayType })}><FileText size={16} /> Export Report</Button></div>
+        <div className="field-note-banner" aria-label="Dashboard field note">
+          <span>Studio note</span>
+          <p>Use one observed place or habit as the anchor. The dashboard works best when the number explains something you actually noticed.</p>
+        </div>
 
         <div className="tariff-strip" aria-label="Ontario time-of-use rates">
           {tariffRows.map(([period, rate, detail, color]) => <span key={period}><i style={{ background: color }} /> <b>{period}</b> {rate} <em>{detail}</em></span>)}
