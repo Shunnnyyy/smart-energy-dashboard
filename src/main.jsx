@@ -158,6 +158,34 @@ function buildInsights(monthlyUsage, onPeakPercent, model) {
   return insights;
 }
 
+function buildSmartEnergyPrompt({ monthlyUsage, onPeakPercent, midPeakPercent, model, scenarioLabel, dayType }) {
+  const largestLoad = makeApplianceData(monthlyUsage, model.billingProfile).sort((a, b) => b.value - a.value)[0];
+  return `Act as a supportive energy and systems mentor. Help me turn this SmartEnergy dashboard scenario into a short practical analysis for a Grade 10 project.
+
+Project context:
+I am connecting field observations from NOCTIS and Lumen Shift with household energy cost and timing. I want the writing to sound like personal curiosity about everyday electricity, not like a forced engineering application.
+
+Current scenario:
+Scenario: ${scenarioLabel}
+Usage mode: ${dayType}
+Billing profile: ${model.profile.label}
+Monthly usage: ${monthlyUsage} kWh
+On-peak share: ${onPeakPercent}%
+Mid-peak share: ${midPeakPercent}%
+Off-peak share: ${model.offPeakPercent}%
+Estimated monthly bill: ${formatMoney(model.estimatedBill)}
+Potential monthly savings from shifting 15% of on-peak use: ${formatMoney(model.potentialSavings)}
+Efficiency score: ${model.efficiencyScore}
+Largest modeled load: ${largestLoad.name}, ${largestLoad.value} kWh
+
+Please write:
+1. a 2-sentence summary of the energy pattern;
+2. one EE note about load, timing, and control;
+3. one system design note about people, routines, and feedback;
+4. one industrial engineering note about efficiency, priority, and low-cost action;
+5. one small next experiment I can actually do this week.`;
+}
+
 function makeHourlyUsageData(monthlyUsage, dayType, billingProfile = 'detached') {
   const dailyTarget = monthlyUsage / 30;
   const profile = BILLING_PROFILES[billingProfile] || BILLING_PROFILES.detached;
@@ -394,6 +422,42 @@ function Button({ children, secondary, onClick, ariaLabel }) {
   return <motion.button aria-label={ariaLabel} onClick={onClick} whileHover={{ y: -2 }} whileTap={{ scale: 0.98 }} className={secondary ? 'btn secondary' : 'btn'}>{children}</motion.button>;
 }
 
+function ChatGptScenarioPanel({ monthlyUsage, onPeakPercent, midPeakPercent, model, scenarioLabel, dayType }) {
+  const [copyState, setCopyState] = useState('Copy ChatGPT Prompt');
+  const priority =
+    onPeakPercent > 40
+      ? 'High priority: peak-hour use is the main efficiency target.'
+      : monthlyUsage > ONTARIO_AVERAGE_KWH
+        ? 'Medium priority: total usage is above the Ontario household benchmark.'
+        : 'Low priority: keep tracking and choose one small habit to test.';
+
+  async function copyPrompt() {
+    try {
+      await navigator.clipboard.writeText(buildSmartEnergyPrompt({ monthlyUsage, onPeakPercent, midPeakPercent, model, scenarioLabel, dayType }));
+      setCopyState('Prompt Copied');
+    } catch {
+      setCopyState('Copy Failed');
+    }
+    setTimeout(() => setCopyState('Copy ChatGPT Prompt'), 1400);
+  }
+
+  return (
+    <Card className="chatgpt-card">
+      <div>
+        <p className="label blue-text">Work with ChatGPT</p>
+        <h3>Scenario explainer</h3>
+        <p>{priority} Use this after NOCTIS or Lumen Shift to explain how timing, cost, and repeated behavior shape the energy pattern.</p>
+      </div>
+      <div className="chatgpt-lenses">
+        <span><b>EE</b> load + timing</span>
+        <span><b>SYDE</b> habits + feedback</span>
+        <span><b>IE</b> priority + cost</span>
+      </div>
+      <Button onClick={copyPrompt}><Sparkles size={16} /> {copyState}</Button>
+    </Card>
+  );
+}
+
 function Card({ children, className = '' }) {
   return <motion.div initial={{ opacity: 0, y: 16 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} whileHover={{ y: -3 }} className={`card ${className}`}>{children}</motion.div>;
 }
@@ -537,25 +601,25 @@ function LandingPage({ openDashboard, model }) {
         <p className="eyebrow blue-text">Connected notes</p>
         <h2 className="section-title">One curiosity, different scales.</h2>
         <div className="project-line-grid">
-          <a className="line-card archive-link" href={POWER_IN_PRACTICE_URL}>
-            <span>Research notes</span>
-            <h3>Power in Practice</h3>
-            <p>Everyday electricity notes connecting habits, public data, cost, and visible nighttime patterns.</p>
-          </a>
           <a className="line-card noctis-link" href={NOCTIS_URL}>
             <span>Photo map</span>
             <h3>NOCTIS</h3>
             <p>A night light photo archive where Toronto images become map anchors, lux notes, and field observations.</p>
+          </a>
+          <a className="line-card lumen-link" href={LUMEN_SHIFT_URL}>
+            <span>Light prototype</span>
+            <h3>Lumen Shift</h3>
+            <p>A responsive lighting study shaped by lux readings, quiet hours, motion, and field observation.</p>
           </a>
           <a className="line-card dashboard-link" href="#top" onClick={(event) => { event.preventDefault(); openDashboard(); }}>
             <span>Data dashboard</span>
             <h3>SmartEnergy</h3>
             <p>A household energy calculator where usage assumptions become sliders, charts, and reportable scenarios.</p>
           </a>
-          <a className="line-card lumen-link" href={LUMEN_SHIFT_URL}>
-            <span>Light prototype</span>
-            <h3>Lumen Shift</h3>
-            <p>A responsive lighting study shaped by lux readings, quiet hours, motion, and field observation.</p>
+          <a className="line-card archive-link" href={POWER_IN_PRACTICE_URL}>
+            <span>Research notes</span>
+            <h3>Power in Practice</h3>
+            <p>Everyday electricity notes connecting habits, public data, cost, and visible nighttime patterns.</p>
           </a>
         </div>
       </section>
@@ -620,7 +684,7 @@ function ScenarioPresets({ activeScenario, applyScenario }) {
   );
 }
 
-function OverviewScreen({ monthlyUsage, onPeakPercent, model, dayType, showBenchmark }) {
+function OverviewScreen({ monthlyUsage, onPeakPercent, midPeakPercent, model, dayType, showBenchmark, scenarioLabel }) {
   const usageData = makeHourlyUsageData(monthlyUsage, dayType, model.billingProfile);
   const applianceData = makeApplianceData(monthlyUsage, model.billingProfile);
   const insights = buildInsights(monthlyUsage, onPeakPercent, model);
@@ -674,6 +738,8 @@ function OverviewScreen({ monthlyUsage, onPeakPercent, model, dayType, showBench
       <div className="recommendations">
         {insights.map(([title, text]) => <Card key={title} className="rec-card"><Lightbulb color="#22C55E" /><div><h3>{title}</h3><p>{text}</p></div></Card>)}
       </div>
+
+      <ChatGptScenarioPanel monthlyUsage={monthlyUsage} onPeakPercent={onPeakPercent} midPeakPercent={midPeakPercent} model={model} scenarioLabel={scenarioLabel} dayType={dayType} />
     </>
   );
 }
@@ -816,7 +882,7 @@ function Dashboard({ backHome, monthlyUsage, setMonthlyUsage, onPeakPercent, set
           <InputSlider label="Mid-Peak Usage" value={model.midPeakPercent} min={0} max={Math.max(0, 100 - model.onPeakPercent)} suffix="%" onChange={setMidPeakPercent} />
         </div>
 
-        {active === 'Overview' && <OverviewScreen monthlyUsage={monthlyUsage} onPeakPercent={onPeakPercent} model={model} dayType={dayType} showBenchmark={showBenchmark} />}
+        {active === 'Overview' && <OverviewScreen monthlyUsage={monthlyUsage} onPeakPercent={onPeakPercent} midPeakPercent={midPeakPercent} model={model} dayType={dayType} showBenchmark={showBenchmark} scenarioLabel={scenarioLabel} />}
         {active === 'Usage' && <UsageScreen monthlyUsage={monthlyUsage} model={model} dayType={dayType} />}
         {active === 'Insights' && <InsightsScreen monthlyUsage={monthlyUsage} onPeakPercent={onPeakPercent} model={model} />}
         {active === 'Comparison' && <ComparisonScreen monthlyUsage={monthlyUsage} model={model} showBenchmark={showBenchmark} />}
