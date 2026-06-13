@@ -634,6 +634,83 @@ footer div { display: flex; gap: 24px; }
   line-height: 1.65;
 }
 
+.load-shift-strip {
+  display: grid;
+  grid-template-columns: minmax(220px, .45fr) minmax(0, 1fr);
+  gap: 18px;
+  align-items: center;
+  margin-bottom: 18px;
+  padding: 16px 0;
+  border-top: 1px dashed rgba(15,23,42,.16);
+  border-bottom: 1px solid rgba(15,23,42,.08);
+}
+
+.load-shift-strip h3 {
+  margin: 6px 0 0;
+  font-size: 18px;
+  letter-spacing: 0;
+}
+
+.load-flow {
+  display: flex;
+  min-height: 54px;
+  overflow: hidden;
+  border: 1px solid rgba(15,23,42,.08);
+  border-radius: 8px;
+  background: rgba(255,255,255,.64);
+}
+
+.load-flow span {
+  position: relative;
+  flex: 0 0 var(--flow-size);
+  min-width: 72px;
+  display: grid;
+  align-content: center;
+  gap: 2px;
+  padding: 10px 12px;
+  border-right: 1px solid rgba(15,23,42,.08);
+  transition: flex-basis 520ms cubic-bezier(.22, 1, .36, 1);
+}
+
+.load-flow span:last-child {
+  border-right: 0;
+}
+
+.load-flow i {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent, var(--flow-color), transparent);
+  opacity: .14;
+  transform: translateX(-60%);
+  animation: load-current 4.8s ease-in-out infinite;
+}
+
+.load-flow b,
+.load-flow em {
+  position: relative;
+}
+
+.load-flow b {
+  font-size: 11px;
+  font-weight: 850;
+}
+
+.load-flow em {
+  color: #64748B;
+  font-style: normal;
+  font-size: 12px;
+}
+
+@keyframes load-current {
+  0%, 100% {
+    transform: translateX(-65%);
+  }
+
+  50% {
+    transform: translateX(65%);
+  }
+}
+
 .page-title-row h1,
 .insight-hero h2,
 .source-detail h2,
@@ -762,6 +839,10 @@ footer div { display: flex; gap: 24px; }
     margin-top: -4px;
   }
 
+  .load-shift-strip {
+    grid-template-columns: 1fr;
+  }
+
   .tariff-strip {
     grid-template-columns: 1fr;
   }
@@ -848,5 +929,13 @@ footer div { display: flex; gap: 24px; }
     max-width: 56px;
     overflow: hidden;
     text-overflow: ellipsis;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .load-flow span,
+  .load-flow i {
+    animation: none;
+    transition: none;
   }
 }

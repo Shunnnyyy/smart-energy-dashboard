@@ -684,6 +684,32 @@ function ScenarioPresets({ activeScenario, applyScenario }) {
   );
 }
 
+function LoadShiftStrip({ model }) {
+  const segments = [
+    ['Off-Peak', model.offPeakPercent, '#16A34A'],
+    ['Mid-Peak', model.midPeakPercent, '#F59E0B'],
+    ['On-Peak', model.onPeakPercent, '#EF4444'],
+  ];
+
+  return (
+    <section className="load-shift-strip" aria-label="Fluid load scheduling">
+      <div>
+        <p className="label blue-text">Fluid scheduling</p>
+        <h3>Load moves across time, not just cost.</h3>
+      </div>
+      <div className="load-flow" aria-hidden="true">
+        {segments.map(([label, value, color]) => (
+          <span key={label} style={{ '--flow-size': `${Math.max(8, value)}%`, '--flow-color': color }}>
+            <i />
+            <b>{label}</b>
+            <em>{value}%</em>
+          </span>
+        ))}
+      </div>
+    </section>
+  );
+}
+
 function OverviewScreen({ monthlyUsage, onPeakPercent, midPeakPercent, model, dayType, showBenchmark, scenarioLabel }) {
   const usageData = makeHourlyUsageData(monthlyUsage, dayType, model.billingProfile);
   const applianceData = makeApplianceData(monthlyUsage, model.billingProfile);
@@ -876,6 +902,7 @@ function Dashboard({ backHome, monthlyUsage, setMonthlyUsage, onPeakPercent, set
         </div>
 
         <ScenarioPresets activeScenario={activeScenario} applyScenario={applyScenario} />
+        <LoadShiftStrip model={model} />
 
         <div className="input-grid">
           <InputSlider label="Monthly Usage" value={monthlyUsage} min={300} max={1400} suffix=" kWh" onChange={setMonthlyUsage} />
