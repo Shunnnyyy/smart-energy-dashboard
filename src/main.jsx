@@ -163,7 +163,7 @@ function buildSmartEnergyPrompt({ monthlyUsage, onPeakPercent, midPeakPercent, m
   return `Act as a supportive energy and systems mentor. Help me turn this SmartEnergy dashboard scenario into a short practical analysis for a Grade 10 project.
 
 Project context:
-I am connecting field observations from NOCTIS and Lumen Shift with household energy cost and timing. I want the writing to sound like personal curiosity about everyday electricity, not like a forced engineering application.
+I am connecting field observations from NOCTIS and Lumen Shift with household energy cost and timing. I want the writing to sound like personal curiosity about everyday electricity, not like a forced showcase project.
 
 Current scenario:
 Scenario: ${scenarioLabel}
@@ -180,9 +180,9 @@ Largest modeled load: ${largestLoad.name}, ${largestLoad.value} kWh
 
 Please write:
 1. a 2-sentence summary of the energy pattern;
-2. one EE note about load, timing, and control;
-3. one system design note about people, routines, and feedback;
-4. one industrial engineering note about efficiency, priority, and low-cost action;
+2. one note about load, timing, and control;
+3. one note about people, routines, and feedback;
+4. one note about efficiency, priority, and low-cost action;
 5. one small next experiment I can actually do this week.`;
 }
 
@@ -449,9 +449,9 @@ function ChatGptScenarioPanel({ monthlyUsage, onPeakPercent, midPeakPercent, mod
         <p>{priority} Use this after NOCTIS or Lumen Shift to explain how timing, cost, and repeated behavior shape the energy pattern.</p>
       </div>
       <div className="chatgpt-lenses">
-        <span><b>EE</b> load + timing</span>
-        <span><b>SYDE</b> habits + feedback</span>
-        <span><b>IE</b> priority + cost</span>
+        <span><b>Load</b> timing + control</span>
+        <span><b>Routine</b> habits + feedback</span>
+        <span><b>Priority</b> cost + action</span>
       </div>
       <Button onClick={copyPrompt}><Sparkles size={16} /> {copyState}</Button>
     </Card>
