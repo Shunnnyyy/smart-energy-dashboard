@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700;800&display=swap');
 
 :root {
   --se-blue: #2563EB;
@@ -9,7 +9,7 @@
 
 * { box-sizing: border-box; }
 html { scroll-behavior: smooth; scroll-padding-top: 96px; }
-body { margin: 0; font-family: Inter, system-ui, sans-serif; background: #F8FAFC; color: #0F172A; line-height: 1.6; }
+body { margin: 0; font-family: "IBM Plex Sans", system-ui, sans-serif; background: #F8FAFC; color: #0F172A; line-height: 1.6; }
 body::before {
   content: "";
   position: fixed;
@@ -20,7 +20,7 @@ body::before {
     radial-gradient(ellipse at 18% 28%, rgba(37,99,235,0.10), transparent 24%),
     radial-gradient(ellipse at 82% 18%, rgba(34,197,94,0.08), transparent 20%),
     repeating-conic-gradient(from 18deg at 50% 42%, rgba(37,99,235,0.035) 0deg 1.4deg, transparent 1.4deg 10deg);
-  opacity: .7;
+  opacity: .42;
   animation: smart-field-drift 20s ease-in-out infinite alternate;
 }
 button, a, input { font-family: inherit; }
@@ -604,6 +604,7 @@ footer div { display: flex; gap: 24px; }
 @media (max-width: 900px) {
   .nav-links { display: none; }
   .hero { grid-template-columns: 1fr; }
+  body::before { opacity: .26; }
   .flow-coordinator { grid-template-columns: 1fr; padding-top: 30px; }
   .flow-coordinator__rail { height: 64px; }
   .stats-grid, .feature-grid, .comparison, .input-grid, .data-grid, .learning-grid, .action-grid { grid-template-columns: 1fr; }
