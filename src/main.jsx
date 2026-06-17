@@ -524,6 +524,22 @@ function LandingPage({ openDashboard, model }) {
         {stats.map(([label, value, unit]) => <Card key={label}><p className="label">{label}</p><h2>{value}</h2><p className="muted">{unit}</p></Card>)}
       </section>
 
+      <section className="flow-coordinator" aria-label="Energy flow coordinator">
+        <div>
+          <p className="eyebrow blue-text">Fluid scheduling</p>
+          <h2>Move the load before spending more.</h2>
+        </div>
+        <div className="flow-coordinator__rail" aria-hidden="true">
+          <span style={{ '--delay': '0ms' }} />
+          <span style={{ '--delay': '220ms' }} />
+          <span style={{ '--delay': '440ms' }} />
+        </div>
+        <p>
+          The first useful question is not always what to buy. It is when energy is used, what habit creates the peak,
+          and which small shift is easiest to test.
+        </p>
+      </section>
+
       <section id="data" className="section data-section">
         <p className="eyebrow blue-text">Core Data Sources</p>
         <h2 className="section-title">A simple model built from public rates and household assumptions.</h2>
